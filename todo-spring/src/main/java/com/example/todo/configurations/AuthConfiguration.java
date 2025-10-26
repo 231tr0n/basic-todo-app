@@ -1,26 +1,71 @@
 package com.example.todo.configurations;
 
-import com.example.todo.components.JwtAuthenticationComponent;
+import com.example.todo.components.JwtAuthenticationFilterComponent;
+import com.example.todo.enums.RoleEnum;
+import com.example.todo.repositories.UserRepository;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
 @AllArgsConstructor
 public class AuthConfiguration {
-  @NonNull private final JwtAuthenticationComponent jwtAuthenticationComponent;
+  @NonNull private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
+  @NonNull private final UserRepository userRepository;
+
+  @NonNull
+  @Value("${server.host}")
+  private final String host;
+
+  @Value("${server.port}")
+  private final long port;
 
   @Bean
-  SecurityFilterChain securityFilterChain(
-      org.springframework.security.config.annotation.web.builders.HttpSecurity http)
-      throws Exception {
-    return http.csrf(csrf -> csrf.disable())
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    DaoAuthenticationProvider authenticationProvider =
+        new DaoAuthenticationProvider(username -> userRepository.findByUsername(username));
+    authenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(10));
+
+    return http.cors(
+            cors ->
+                cors.configurationSource(
+                    configurationSource -> {
+                      CorsConfiguration configuration = new CorsConfiguration();
+                      configuration.setAllowedOrigins(
+                          List.of(String.format("http://%s:%d", host, port)));
+                      configuration.setAllowedMethods(
+                          List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
+                      configuration.setAllowCredentials(true);
+                      return configuration;
+                    }))
+        .csrf(csrf -> csrf.disable())
+        .formLogin(form -> form.disable())
+        .httpBasic(httpBasic -> httpBasic.disable())
+        .redirectToHttps(Customizer.withDefaults())
+        .authenticationProvider(authenticationProvider)
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
-            auth -> auth.requestMatchers("/api/auth/**").permitAll().anyRequest().authenticated())
-        .addFilterBefore(jwtAuthenticationComponent, UsernamePasswordAuthenticationFilter.class)
+            auth ->
+                auth.requestMatchers("/api/**")
+                    .hasRole(RoleEnum.USER.toString())
+                    .requestMatchers("/actuator/**")
+                    .hasRole(RoleEnum.ADMIN.toString())
+                    .anyRequest()
+                    .authenticated())
+        .addFilterBefore(
+            jwtAuthenticationFilterComponent, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
 }

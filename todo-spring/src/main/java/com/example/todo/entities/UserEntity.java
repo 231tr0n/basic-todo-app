@@ -4,9 +4,8 @@ import com.example.todo.enums.RoleEnum;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,16 +37,27 @@ public class UserEntity implements UserDetails {
   private String password;
 
   @NotNull
-  @Enumerated(EnumType.STRING)
+  @ElementCollection(targetClass = RoleEnum.class)
   @Column(nullable = false)
-  private RoleEnum role;
+  private List<RoleEnum> roles;
 
   @JsonManagedReference
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<TodoEntity> todos;
 
+  @NotNull
+  @Column(nullable = false)
+  private boolean enabled;
+
   @Override
   public List<GrantedAuthority> getAuthorities() {
-    return List.of(new SimpleGrantedAuthority(getRole().toString()));
+    return getRoles().stream()
+        .map(role -> (GrantedAuthority) new SimpleGrantedAuthority(role.toString()))
+        .toList();
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return enabled;
   }
 }

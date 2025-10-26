@@ -28,7 +28,7 @@ public class TodoEntity {
   @JsonBackReference
   @ManyToOne
   @JoinColumn(name = "user_id", referencedColumnName = "id")
-  private UserEntity user;
+  private UserEntity userId;
 
   @NotNull
   @Column(nullable = false)
