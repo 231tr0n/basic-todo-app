@@ -3,6 +3,7 @@ package com.example.todo.components;
 import com.example.todo.entities.UserEntity;
 import com.example.todo.repositories.UserRepository;
 import com.example.todo.services.JwtService;
+import com.example.todo.services.SessionCookieService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -16,7 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.WebUtils;
 
 @Component
 @AllArgsConstructor
@@ -25,20 +25,26 @@ public class JwtAuthenticationFilterComponent extends OncePerRequestFilter {
 
   @NonNull private final UserRepository userRepository;
 
+  @NonNull private final SessionCookieService sessionCookieService;
+
   @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws IOException, ServletException {
     if (SecurityContextHolder.getContext().getAuthentication() != null) {
-      Cookie cookie = WebUtils.getCookie(request, "token");
+      Cookie cookie = sessionCookieService.getSessionCookie(request);
       if (cookie != null) {
         String username = jwtService.decodeJwt(cookie.getValue());
         UserEntity user = userRepository.findByUsername(username);
-        if (user.isEnabled()) {
+        if (user.isEnabled() && !user.isLoggedOut()) {
           UsernamePasswordAuthenticationToken authToken =
-              new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+              new UsernamePasswordAuthenticationToken(
+                  user, user.getPassword(), user.getAuthorities());
           authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
           SecurityContextHolder.getContext().setAuthentication(authToken);
+        } else {
+          SecurityContextHolder.clearContext();
+          response.addCookie(sessionCookieService.deleteSessionCookie());
         }
       }
     }

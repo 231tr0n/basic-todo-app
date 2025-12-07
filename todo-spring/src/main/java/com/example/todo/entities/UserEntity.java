@@ -1,11 +1,10 @@
 package com.example.todo.entities;
 
-import com.example.todo.enums.RoleEnum;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -14,18 +13,19 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Set;
-import lombok.Getter;
+import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Table(name = "users")
-@Getter
+@Data
 public class UserEntity implements UserDetails {
   @Id
   @NotNull
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(nullable = false, unique = true)
   private long id;
 
   @NotNull
@@ -36,28 +36,35 @@ public class UserEntity implements UserDetails {
   @Column(nullable = false)
   private String password;
 
-  @NotNull
-  @ElementCollection(targetClass = RoleEnum.class)
-  @Column(nullable = false)
-  private List<RoleEnum> roles;
+  @JsonManagedReference
+  @OneToMany(
+      mappedBy = "user",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
+  private Set<RoleEntity> roles;
 
   @JsonManagedReference
-  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(
+      mappedBy = "user",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
   private Set<TodoEntity> todos;
 
   @NotNull
   @Column(nullable = false)
   private boolean enabled;
 
+  @NotNull
+  @Column(nullable = false)
+  private boolean loggedOut;
+
+  @NotNull
   @Override
   public List<GrantedAuthority> getAuthorities() {
     return getRoles().stream()
         .map(role -> (GrantedAuthority) new SimpleGrantedAuthority(role.toString()))
         .toList();
-  }
-
-  @Override
-  public boolean isEnabled() {
-    return enabled;
   }
 }

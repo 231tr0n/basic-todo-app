@@ -8,22 +8,21 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.example.todo.entities.UserEntity;
 import java.time.Instant;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@AllArgsConstructor
 public class JwtService {
 
+  @Value("${jwt.expiration:86400}")
   private final long expiration;
 
-  @NonNull private final Algorithm algorithm;
-
-  public JwtService(
-      @NonNull @Value("${jwt.secret}") String secret, @Value("${jwt.expiration}") long expiration) {
-    this.expiration = expiration;
-    this.algorithm = Algorithm.HMAC256(secret);
-  }
+  @Value("${jwt.secret:todo}")
+  @NonNull
+  private final Algorithm algorithm;
 
   public String generateJwt(@NonNull UserEntity user)
       throws IllegalArgumentException, JWTCreationException {

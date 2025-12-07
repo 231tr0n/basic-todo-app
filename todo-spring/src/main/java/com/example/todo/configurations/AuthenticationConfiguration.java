@@ -20,7 +20,7 @@ import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
 @AllArgsConstructor
-public class AuthConfiguration {
+public class AuthenticationConfiguration {
   @NonNull private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
   @NonNull private final UserRepository userRepository;
 
@@ -63,7 +63,7 @@ public class AuthConfiguration {
                     .requestMatchers("/actuator/**")
                     .hasRole(RoleEnum.ADMIN.toString())
                     .anyRequest()
-                    .authenticated())
+                    .permitAll())
         .addFilterBefore(
             jwtAuthenticationFilterComponent, UsernamePasswordAuthenticationFilter.class)
         .build();

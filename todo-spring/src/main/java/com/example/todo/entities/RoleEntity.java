@@ -1,6 +1,6 @@
 package com.example.todo.entities;
 
-import com.example.todo.enums.StatusEnum;
+import com.example.todo.enums.RoleEnum;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,33 +14,27 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "todos")
+@Table(name = "roles")
+@NoArgsConstructor
 @Data
-public class TodoEntity {
+public class RoleEntity {
   @Id
   @NotNull
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false, unique = true)
-  private long id;
+  private Long id;
+
+  @NotNull
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, unique = true)
+  private RoleEnum role;
 
   @NotNull
   @JsonBackReference
   @ManyToOne
   @JoinColumn(name = "user_id", referencedColumnName = "id")
   private UserEntity user;
-
-  @NotNull
-  @Column(nullable = false)
-  private String title;
-
-  @NotNull
-  @Column(nullable = false)
-  private String description;
-
-  @NotNull
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private StatusEnum status;
 }
