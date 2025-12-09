@@ -34,7 +34,7 @@ public class GlobalController {
   public void updateUser() {}
 
   @PatchMapping("/user")
-  public void updateUserPassword() {}
+  public void patchUser() {}
 
   @PostMapping("/todo")
   public void createTodo() {}
@@ -46,7 +46,7 @@ public class GlobalController {
   public void updateTodo() {}
 
   @PatchMapping("/todo")
-  public void updateTodoStatus() {}
+  public void patchTodo() {}
 
   @PostMapping("/signin")
   public UserEntity signIn(@RequestBody SignInDto signInDto, HttpServletResponse response) {

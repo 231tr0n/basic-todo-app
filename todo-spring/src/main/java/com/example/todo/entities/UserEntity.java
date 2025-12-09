@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
@@ -45,18 +46,18 @@ public class UserEntity implements UserDetails {
       mappedBy = "user",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.EAGER)
-  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-  private Set<RoleEntity> roles;
+      fetch = FetchType.LAZY)
+  @JsonIgnore
+  private Set<RoleEntity> roles = new HashSet<>();
 
   @JsonManagedReference
   @OneToMany(
       mappedBy = "user",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.EAGER)
-  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-  private Set<TodoEntity> todos;
+      fetch = FetchType.LAZY)
+  @JsonIgnore
+  private Set<TodoEntity> todos = new HashSet<>();
 
   @NotNull
   @Column(nullable = false)
