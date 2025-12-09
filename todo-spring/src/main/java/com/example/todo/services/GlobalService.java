@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,27 +35,27 @@ public class GlobalService implements UserDetailsService {
     return userRepository.findByUsername(username);
   }
 
-  public UserEntity signUp(SignUpDto signUpDto) throws Exception {
+  public void signUp(SignUpDto signUpDto) {
     if (userRepository.findByUsername(signUpDto.getUsername()) != null) {
-      throw new Exception("Username already exists");
+      throw new IllegalArgumentException("Username already exists");
     }
-    UserEntity userEntity = new UserEntity();
-    userEntity.setUsername(signUpDto.getUsername());
-    userEntity.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
-    userEntity.setEnabled(true);
+
+    UserEntity user = new UserEntity();
+    user.setUsername(signUpDto.getUsername());
+    user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
+    user.setEnabled(true);
+    user.setLoggedOut(true);
 
     Set<RoleEntity> roles = new HashSet<>();
     for (RoleEnum role : signUpDto.getRoles()) {
       RoleEntity roleEntity = new RoleEntity();
       roleEntity.setRole(role);
-      roleEntity.setUser(userEntity);
+      roleEntity.setUser(user);
       roles.add(roleEntity);
     }
-    userEntity.setRoles(roles);
+    user.setRoles(roles);
 
-    userRepository.save(userEntity);
-
-    return userEntity;
+    userRepository.save(user);
   }
 
   public UserEntity signIn(SignInDto signInDto) {
@@ -67,7 +68,7 @@ public class GlobalService implements UserDetailsService {
 
   public void signOut() {
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
-      return;
+      throw new SessionAuthenticationException("User is not authenticated");
     }
     UserEntity user =
         (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

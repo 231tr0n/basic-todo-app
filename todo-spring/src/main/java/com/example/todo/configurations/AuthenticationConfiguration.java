@@ -32,7 +32,7 @@ public class AuthenticationConfiguration {
   private final long port;
 
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) {
     DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(globalService);
     authenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(10));
 
@@ -58,7 +58,9 @@ public class AuthenticationConfiguration {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/**")
+                auth.requestMatchers("/api/user")
+                    .hasRole(RoleEnum.USER.toString())
+                    .requestMatchers("/api/todo")
                     .hasRole(RoleEnum.USER.toString())
                     .requestMatchers("/actuator/**")
                     .hasRole(RoleEnum.ADMIN.toString())

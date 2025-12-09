@@ -1,6 +1,8 @@
 package com.example.todo.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,6 +28,7 @@ public class UserEntity implements UserDetails {
   @NotNull
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false, unique = true)
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private long id;
 
   @NotNull
@@ -34,6 +37,7 @@ public class UserEntity implements UserDetails {
 
   @NotNull
   @Column(nullable = false)
+  @JsonIgnore
   private String password;
 
   @JsonManagedReference
@@ -42,6 +46,7 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.EAGER)
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private Set<RoleEntity> roles;
 
   @JsonManagedReference
@@ -50,14 +55,17 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.EAGER)
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private Set<TodoEntity> todos;
 
   @NotNull
   @Column(nullable = false)
+  @JsonIgnore
   private boolean enabled;
 
   @NotNull
   @Column(nullable = false)
+  @JsonIgnore
   private boolean loggedOut;
 
   @NotNull

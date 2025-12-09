@@ -14,24 +14,25 @@ public class SessionCookieService {
 
   @Value("${cookie.name:token}")
   @NonNull
-  private final String cookieName;
+  private final String sessionCookieName;
 
-  @Value("${jwt.expiry:86400}")
-  private final int maxAge;
+  @Value("${jwt.expiry}")
+  @NonNull
+  private final Integer expiry;
 
   public Cookie generateSessionCookie(String value) {
-    Cookie cookie = new Cookie(cookieName, value);
-    cookie.setMaxAge(maxAge);
+    Cookie cookie = new Cookie(sessionCookieName, value);
+    cookie.setMaxAge(expiry);
     return cookie;
   }
 
   public Cookie deleteSessionCookie() {
-    Cookie cookie = new Cookie(cookieName, "");
+    Cookie cookie = new Cookie(sessionCookieName, "");
     cookie.setMaxAge(0);
     return cookie;
   }
 
   public Cookie getSessionCookie(HttpServletRequest request) {
-    return WebUtils.getCookie(request, cookieName);
+    return WebUtils.getCookie(request, sessionCookieName);
   }
 }
