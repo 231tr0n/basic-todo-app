@@ -2,7 +2,7 @@ package com.example.todo.configurations;
 
 import com.example.todo.components.JwtAuthenticationFilterComponent;
 import com.example.todo.enums.RoleEnum;
-import com.example.todo.repositories.UserRepository;
+import com.example.todo.services.AuthenticationService;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -22,7 +22,7 @@ import org.springframework.web.cors.CorsConfiguration;
 @AllArgsConstructor
 public class AuthenticationConfiguration {
   @NonNull private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
-  @NonNull private final UserRepository userRepository;
+  @NonNull private final AuthenticationService authenticationService;
 
   @NonNull
   @Value("${server.host}")
@@ -34,7 +34,7 @@ public class AuthenticationConfiguration {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     DaoAuthenticationProvider authenticationProvider =
-        new DaoAuthenticationProvider(username -> userRepository.findByUsername(username));
+        new DaoAuthenticationProvider(authenticationService);
     authenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(10));
 
     return http.cors(
@@ -52,6 +52,7 @@ public class AuthenticationConfiguration {
         .csrf(csrf -> csrf.disable())
         .formLogin(form -> form.disable())
         .httpBasic(httpBasic -> httpBasic.disable())
+        .logout(logout -> logout.disable())
         .redirectToHttps(Customizer.withDefaults())
         .authenticationProvider(authenticationProvider)
         .sessionManagement(

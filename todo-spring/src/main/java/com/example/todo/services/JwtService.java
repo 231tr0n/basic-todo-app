@@ -22,7 +22,7 @@ public class JwtService {
 
   @Value("${jwt.secret:todo}")
   @NonNull
-  private final Algorithm algorithm;
+  private final String secret;
 
   public String generateJwt(@NonNull UserEntity user)
       throws IllegalArgumentException, JWTCreationException {
@@ -31,11 +31,11 @@ public class JwtService {
         .withSubject(user.getUsername())
         .withIssuedAt(now)
         .withExpiresAt(now.plusSeconds(expiration))
-        .sign(algorithm);
+        .sign(Algorithm.HMAC512(secret));
   }
 
   public String decodeJwt(@NonNull String token)
       throws AlgorithmMismatchException, TokenExpiredException, JWTVerificationException {
-    return JWT.require(algorithm).build().verify(token).getSubject();
+    return JWT.require(Algorithm.HMAC512(secret)).build().verify(token).getSubject();
   }
 }

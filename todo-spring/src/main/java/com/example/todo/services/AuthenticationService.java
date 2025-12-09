@@ -14,9 +14,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,12 +30,14 @@ public class AuthenticationService implements UserDetailsService {
 
   @NonNull private final AuthenticationManager authenticationManager;
 
+  @NonNull private final SecurityContextLogoutHandler securityContextLogoutHandler;
+
   @Override
-  public UserDetails loadUserByUsername(String username) {
+  public UserEntity loadUserByUsername(String username) {
     return userRepository.findByUsername(username);
   }
 
-  public UserDetails signUp(SignUpDto signUpDto) throws Exception {
+  public UserEntity signUp(SignUpDto signUpDto) throws Exception {
     if (userRepository.findByUsername(signUpDto.getUsername()) != null) {
       throw new Exception("Username already exists");
     }
@@ -67,9 +69,13 @@ public class AuthenticationService implements UserDetailsService {
   }
 
   public void signOut() {
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+      return;
+    }
     UserEntity user =
         (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     user.setLoggedOut(true);
     userRepository.save(user);
+    SecurityContextHolder.clearContext();
   }
 }

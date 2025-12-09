@@ -1,7 +1,7 @@
 package com.example.todo.components;
 
 import com.example.todo.entities.UserEntity;
-import com.example.todo.repositories.UserRepository;
+import com.example.todo.services.AuthenticationService;
 import com.example.todo.services.JwtService;
 import com.example.todo.services.SessionCookieService;
 import jakarta.servlet.FilterChain;
@@ -23,7 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilterComponent extends OncePerRequestFilter {
   @NonNull private final JwtService jwtService;
 
-  @NonNull private final UserRepository userRepository;
+  @NonNull private final AuthenticationService authenticationService;
 
   @NonNull private final SessionCookieService sessionCookieService;
 
@@ -35,7 +35,7 @@ public class JwtAuthenticationFilterComponent extends OncePerRequestFilter {
       Cookie cookie = sessionCookieService.getSessionCookie(request);
       if (cookie != null) {
         String username = jwtService.decodeJwt(cookie.getValue());
-        UserEntity user = userRepository.findByUsername(username);
+        UserEntity user = authenticationService.loadUserByUsername(username);
         if (user.isEnabled() && !user.isLoggedOut()) {
           UsernamePasswordAuthenticationToken authToken =
               new UsernamePasswordAuthenticationToken(
