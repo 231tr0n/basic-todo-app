@@ -2,7 +2,7 @@ package com.example.todo.configurations;
 
 import com.example.todo.components.JwtAuthenticationFilterComponent;
 import com.example.todo.enums.RoleEnum;
-import com.example.todo.services.AuthenticationService;
+import com.example.todo.services.GlobalService;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -22,7 +22,7 @@ import org.springframework.web.cors.CorsConfiguration;
 @AllArgsConstructor
 public class AuthenticationConfiguration {
   @NonNull private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
-  @NonNull private final AuthenticationService authenticationService;
+  @NonNull private final GlobalService globalService;
 
   @NonNull
   @Value("${server.host}")
@@ -33,8 +33,7 @@ public class AuthenticationConfiguration {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    DaoAuthenticationProvider authenticationProvider =
-        new DaoAuthenticationProvider(authenticationService);
+    DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(globalService);
     authenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(10));
 
     return http.cors(

@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
-public class AuthenticationService implements UserDetailsService {
+public class GlobalService implements UserDetailsService {
   @NonNull private final JwtService jwtService;
 
   @NonNull private final UserRepository userRepository;

@@ -2,7 +2,7 @@ package com.example.todo.controllers;
 
 import com.example.todo.dtos.SignInDto;
 import com.example.todo.dtos.SignUpDto;
-import com.example.todo.services.AuthenticationService;
+import com.example.todo.services.GlobalService;
 import com.example.todo.services.JwtService;
 import com.example.todo.services.SessionCookieService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 @AllArgsConstructor
 public class GlobalController {
-  @NonNull private final AuthenticationService authenticationService;
+  @NonNull private final GlobalService globalService;
 
   @NonNull private final JwtService jwtService;
 
@@ -28,13 +28,13 @@ public class GlobalController {
   public void signIn(@RequestBody SignInDto signInDto, HttpServletResponse response) {
     response.addCookie(
         sessionCookieService.generateSessionCookie(
-            jwtService.generateJwt(authenticationService.signIn(signInDto))));
+            jwtService.generateJwt(globalService.signIn(signInDto))));
   }
 
   @PostMapping("/signup")
   public ResponseEntity<String> signUp(@RequestBody SignUpDto signUpDto) {
     try {
-      authenticationService.signUp(signUpDto);
+      globalService.signUp(signUpDto);
     } catch (Exception e) {
       return ResponseEntity.badRequest().body(e.getMessage());
     }
@@ -43,7 +43,7 @@ public class GlobalController {
 
   @PostMapping("/signout")
   public void signOut(HttpServletResponse response) {
-    authenticationService.signOut();
+    globalService.signOut();
     response.addCookie(sessionCookieService.deleteSessionCookie());
   }
 }
