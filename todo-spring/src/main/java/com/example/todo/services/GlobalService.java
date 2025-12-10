@@ -5,6 +5,8 @@ import com.example.todo.dtos.SignUpDto;
 import com.example.todo.entities.RoleEntity;
 import com.example.todo.entities.UserEntity;
 import com.example.todo.enums.RoleEnum;
+import com.example.todo.repositories.RoleRepository;
+import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,6 +27,10 @@ public class GlobalService implements UserDetailsService {
   @NonNull private final JwtService jwtService;
 
   @NonNull private final UserRepository userRepository;
+
+  @NonNull private final RoleRepository roleRepository;
+
+  @NonNull private final TodoRepository todoRepository;
 
   @NonNull private final BCryptPasswordEncoder passwordEncoder;
 

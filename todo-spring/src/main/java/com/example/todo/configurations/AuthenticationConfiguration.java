@@ -22,6 +22,7 @@ import org.springframework.web.cors.CorsConfiguration;
 @AllArgsConstructor
 public class AuthenticationConfiguration {
   @NonNull private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
+
   @NonNull private final GlobalService globalService;
 
   @NonNull
