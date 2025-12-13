@@ -1,10 +1,10 @@
 package com.example.todo.dtos;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class PatchUserDto {
-  @NotNull private String oldPassword;
-  @NotNull private String newPassword;
+  @NotBlank private String oldPassword;
+  @NotBlank private String newPassword;
 }

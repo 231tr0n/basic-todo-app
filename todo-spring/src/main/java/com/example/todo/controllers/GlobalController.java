@@ -12,6 +12,7 @@ import com.example.todo.services.GlobalService;
 import com.example.todo.services.JwtService;
 import com.example.todo.services.SessionCookieService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,12 +41,12 @@ public class GlobalController {
   }
 
   @PutMapping("/user")
-  public void updateUser(@RequestBody UpdateUserDto updateUserDto) {
+  public void updateUser(@Valid @RequestBody UpdateUserDto updateUserDto) {
     globalService.updateUser(updateUserDto);
   }
 
   @PatchMapping("/user")
-  public void patchUser(@RequestBody PatchUserDto patchUserDto) {
+  public void patchUser(@Valid @RequestBody PatchUserDto patchUserDto) {
     globalService.patchUser(patchUserDto);
   }
 
@@ -56,7 +57,7 @@ public class GlobalController {
   }
 
   @PostMapping("/todo")
-  public void createTodo(@RequestBody CreateTodoDto createTodoDto) {
+  public void createTodo(@Valid @RequestBody CreateTodoDto createTodoDto) {
     globalService.createTodo(createTodoDto);
   }
 
@@ -66,12 +67,12 @@ public class GlobalController {
   }
 
   @PutMapping("/todo")
-  public void updateTodo(@RequestBody UpdateTodoDto updateTodoDto) {
+  public void updateTodo(@Valid @RequestBody UpdateTodoDto updateTodoDto) {
     globalService.updateTodo(updateTodoDto);
   }
 
   @PatchMapping("/todo")
-  public void patchTodo(@RequestBody PatchTodoDto patchTodoDto) {
+  public void patchTodo(@Valid @RequestBody PatchTodoDto patchTodoDto) {
     globalService.patchTodo(patchTodoDto);
   }
 
@@ -81,14 +82,14 @@ public class GlobalController {
   }
 
   @PostMapping("/signin")
-  public UserEntity signIn(@RequestBody SignInDto signInDto, HttpServletResponse response) {
+  public UserEntity signIn(@Valid @RequestBody SignInDto signInDto, HttpServletResponse response) {
     UserEntity user = globalService.signIn(signInDto);
     response.addCookie(sessionCookieService.generateSessionCookie(jwtService.generateJwt(user)));
     return user;
   }
 
   @PostMapping("/signup")
-  public String signUp(@RequestBody SignUpDto signUpDto) {
+  public String signUp(@Valid @RequestBody SignUpDto signUpDto) {
     globalService.signUp(signUpDto);
     return "User registered successfully";
   }

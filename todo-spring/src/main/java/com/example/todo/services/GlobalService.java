@@ -96,6 +96,9 @@ public class GlobalService implements UserDetailsService {
   public void updateUser(UpdateUserDto updateUserDto) {
     UserEntity user = getUser();
     if (updateUserDto.getUsername() != null) {
+      if (userRepository.findByUsername(updateUserDto.getUsername()) != null) {
+        throw new IllegalArgumentException("Username already exists");
+      }
       user.setUsername(updateUserDto.getUsername());
     }
     if (updateUserDto.getRoles() != null) {
