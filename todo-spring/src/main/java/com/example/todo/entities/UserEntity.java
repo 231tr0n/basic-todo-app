@@ -47,7 +47,7 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonIgnore
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private Set<RoleEntity> roles = new HashSet<>();
 
   @JsonManagedReference
@@ -56,7 +56,7 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonIgnore
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private Set<TodoEntity> todos = new HashSet<>();
 
   @NotNull

@@ -1,10 +1,17 @@
 package com.example.todo.services;
 
+import com.example.todo.dtos.CreateTodoDto;
+import com.example.todo.dtos.PatchTodoDto;
+import com.example.todo.dtos.PatchUserDto;
 import com.example.todo.dtos.SignInDto;
 import com.example.todo.dtos.SignUpDto;
+import com.example.todo.dtos.UpdateTodoDto;
+import com.example.todo.dtos.UpdateUserDto;
 import com.example.todo.entities.RoleEntity;
+import com.example.todo.entities.TodoEntity;
 import com.example.todo.entities.UserEntity;
 import com.example.todo.enums.RoleEnum;
+import com.example.todo.enums.StatusEnum;
 import com.example.todo.repositories.RoleRepository;
 import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
@@ -45,13 +52,11 @@ public class GlobalService implements UserDetailsService {
     if (userRepository.findByUsername(signUpDto.getUsername()) != null) {
       throw new IllegalArgumentException("Username already exists");
     }
-
     UserEntity user = new UserEntity();
     user.setUsername(signUpDto.getUsername());
     user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
     user.setEnabled(true);
     user.setLoggedOut(true);
-
     Set<RoleEntity> roles = new HashSet<>();
     for (RoleEnum role : signUpDto.getRoles()) {
       RoleEntity roleEntity = new RoleEntity();
@@ -60,7 +65,6 @@ public class GlobalService implements UserDetailsService {
       roles.add(roleEntity);
     }
     user.setRoles(roles);
-
     userRepository.save(user);
   }
 
@@ -69,17 +73,89 @@ public class GlobalService implements UserDetailsService {
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
                 signInDto.getUsername(), signInDto.getPassword()));
+    UserEntity user = (UserEntity) auth.getPrincipal();
+    user.setLoggedOut(false);
+    userRepository.save(user);
     return (UserEntity) auth.getPrincipal();
   }
 
   public void signOut() {
-    if (SecurityContextHolder.getContext().getAuthentication() == null) {
-      throw new SessionAuthenticationException("User is not authenticated");
-    }
-    UserEntity user =
-        (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    UserEntity user = getUser();
     user.setLoggedOut(true);
     userRepository.save(user);
     SecurityContextHolder.clearContext();
+  }
+
+  public UserEntity getUser() {
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+      throw new SessionAuthenticationException("User is not authenticated");
+    }
+    return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+  }
+
+  public void updateUser(UpdateUserDto updateUserDto) {
+    UserEntity user = getUser();
+    user.setUsername(updateUserDto.getUsername());
+    roleRepository.deleteAllByUser(user);
+    Set<RoleEntity> roles = new HashSet<>();
+    for (RoleEnum role : updateUserDto.getRoles()) {
+      RoleEntity roleEntity = new RoleEntity();
+      roleEntity.setRole(role);
+      roleEntity.setUser(user);
+      roles.add(roleEntity);
+    }
+    user.setRoles(roles);
+    userRepository.save(user);
+  }
+
+  public void patchUser(PatchUserDto patchUserDto) {
+    UserEntity user = getUser();
+    authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(user.getUsername(), patchUserDto.getOldPassword()));
+    user.setPassword(passwordEncoder.encode(patchUserDto.getNewPassword()));
+    userRepository.save(user);
+  }
+
+  public void deleteUser() {
+    UserEntity user = getUser();
+    todoRepository.deleteAllByUser(user);
+    roleRepository.deleteAllByUser(user);
+    userRepository.delete(user);
+  }
+
+  public void createTodo(CreateTodoDto createTodoDto) {
+    UserEntity user = getUser();
+    TodoEntity todo = new TodoEntity();
+    todo.setTitle(createTodoDto.getTitle());
+    todo.setDescription(createTodoDto.getDescription());
+    todo.setStatus(StatusEnum.NOT_STARTED);
+    todo.setUser(user);
+    todoRepository.save(todo);
+  }
+
+  public Set<TodoEntity> getTodo() {
+    UserEntity user = getUser();
+    return user.getTodos();
+  }
+
+  public void updateTodo(UpdateTodoDto updateTodoDto) {
+    UserEntity user = getUser();
+    TodoEntity todo = todoRepository.findByIdAndUser(updateTodoDto.getId(), user).orElseThrow();
+    todo.setTitle(updateTodoDto.getTitle());
+    todo.setDescription(updateTodoDto.getDescription());
+    todoRepository.save(todo);
+  }
+
+  public void patchTodo(PatchTodoDto patchTodoDto) {
+    UserEntity user = getUser();
+    TodoEntity todo = todoRepository.findByIdAndUser(patchTodoDto.getId(), user).orElseThrow();
+    todo.setStatus(patchTodoDto.getStatus());
+    todoRepository.save(todo);
+  }
+
+  public void deleteTodo(long id) {
+    UserEntity user = getUser();
+    TodoEntity todo = todoRepository.findByIdAndUser(id, user).orElseThrow();
+    todoRepository.delete(todo);
   }
 }
