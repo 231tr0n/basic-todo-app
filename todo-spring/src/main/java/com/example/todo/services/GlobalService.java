@@ -95,16 +95,20 @@ public class GlobalService implements UserDetailsService {
 
   public void updateUser(UpdateUserDto updateUserDto) {
     UserEntity user = getUser();
-    user.setUsername(updateUserDto.getUsername());
-    roleRepository.deleteAllByUser(user);
-    Set<RoleEntity> roles = new HashSet<>();
-    for (RoleEnum role : updateUserDto.getRoles()) {
-      RoleEntity roleEntity = new RoleEntity();
-      roleEntity.setRole(role);
-      roleEntity.setUser(user);
-      roles.add(roleEntity);
+    if (updateUserDto.getUsername() != null) {
+      user.setUsername(updateUserDto.getUsername());
     }
-    user.setRoles(roles);
+    if (updateUserDto.getRoles() != null) {
+      roleRepository.deleteAllByUser(user);
+      Set<RoleEntity> roles = new HashSet<>();
+      for (RoleEnum role : updateUserDto.getRoles()) {
+        RoleEntity roleEntity = new RoleEntity();
+        roleEntity.setRole(role);
+        roleEntity.setUser(user);
+        roles.add(roleEntity);
+      }
+      user.setRoles(roles);
+    }
     userRepository.save(user);
   }
 
@@ -141,8 +145,12 @@ public class GlobalService implements UserDetailsService {
   public void updateTodo(UpdateTodoDto updateTodoDto) {
     UserEntity user = getUser();
     TodoEntity todo = todoRepository.findByIdAndUser(updateTodoDto.getId(), user).orElseThrow();
-    todo.setTitle(updateTodoDto.getTitle());
-    todo.setDescription(updateTodoDto.getDescription());
+    if (updateTodoDto.getTitle() != null) {
+      todo.setTitle(updateTodoDto.getTitle());
+    }
+    if (updateTodoDto.getDescription() != null) {
+      todo.setDescription(updateTodoDto.getDescription());
+    }
     todoRepository.save(todo);
   }
 

@@ -1,9 +1,10 @@
 package com.example.todo.dtos;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class SignInDto {
-  private String username;
-  private String password;
+  @NotNull private String username;
+  @NotNull private String password;
 }
