@@ -12,7 +12,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.HashSet;
@@ -29,7 +28,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class UserEntity implements UserDetails {
   @Id
   @NotNull
-  @Min(value = 1)
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false, unique = true)
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
