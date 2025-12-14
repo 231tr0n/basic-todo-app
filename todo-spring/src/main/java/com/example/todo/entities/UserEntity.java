@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.HashSet;
@@ -71,6 +72,11 @@ public class UserEntity implements UserDetails {
   @Column(nullable = false)
   @JsonIgnore
   private boolean loggedOut;
+
+  @Transient @JsonIgnore private Set<GrantedAuthority> authorities;
+  @Transient @JsonIgnore private boolean accountNonExpired;
+  @Transient @JsonIgnore private boolean accountNonLocked;
+  @Transient @JsonIgnore private boolean credentialsNonExpired;
 
   @NotNull
   @Override

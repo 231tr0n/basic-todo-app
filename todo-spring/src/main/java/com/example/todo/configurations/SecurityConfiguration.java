@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -62,7 +61,7 @@ public class SecurityConfiguration {
         .formLogin(form -> form.disable())
         .httpBasic(httpBasic -> httpBasic.disable())
         .logout(logout -> logout.disable())
-        .redirectToHttps(Customizer.withDefaults())
+        .redirectToHttps(redirect -> redirect.disable())
         .authenticationProvider(authenticationProvider)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

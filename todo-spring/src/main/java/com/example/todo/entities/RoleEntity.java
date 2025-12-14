@@ -13,12 +13,19 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Entity
-@Table(name = "roles")
+@Table(
+    name = "roles",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "unique_user_role",
+          columnNames = {"user_id", "role"})
+    })
 @Data
 public class RoleEntity {
   @Id
