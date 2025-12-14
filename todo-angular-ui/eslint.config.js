@@ -54,6 +54,8 @@ export default defineConfig([
 	{
 		files: ['**/*.html'],
 		extends: [angular.configs.templateAll],
-		rules: {}
+		rules: {
+			'@angular-eslint/template/i18n': 'off'
+		}
 	}
 ]);
