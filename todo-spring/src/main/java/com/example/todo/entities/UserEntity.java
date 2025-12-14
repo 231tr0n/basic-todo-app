@@ -12,7 +12,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,16 +29,19 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class UserEntity implements UserDetails {
   @Id
   @NotNull
+  @Min(value = 1)
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false, unique = true)
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private long id;
 
   @NotNull
+  @Size(min = 1, max = 255)
   @Column(nullable = false, unique = true)
   private String username;
 
   @NotNull
+  @Size(min = 1, max = 255)
   @Column(nullable = false)
   @JsonIgnore
   private String password;

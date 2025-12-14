@@ -13,7 +13,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Entity
@@ -22,6 +24,7 @@ import lombok.Data;
 public class RoleEntity {
   @Id
   @NotNull
+  @Min(value = 1)
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false, unique = true)
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -29,6 +32,7 @@ public class RoleEntity {
 
   @NotNull
   @Enumerated(EnumType.STRING)
+  @Size(min = 1, max = 255)
   @Column(nullable = false, unique = true)
   private RoleEnum role;
 

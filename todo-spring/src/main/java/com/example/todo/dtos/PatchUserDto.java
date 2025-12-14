@@ -1,16 +1,16 @@
 package com.example.todo.dtos;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class PatchUserDto {
-  @NotBlank
+  @NotNull
   @Size(min = 1, max = 255)
   private String oldPassword;
 
-  @NotBlank
+  @NotNull
   @Size(min = 1, max = 255)
   private String newPassword;
 }
