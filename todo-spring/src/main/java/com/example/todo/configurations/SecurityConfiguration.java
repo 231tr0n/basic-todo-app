@@ -8,8 +8,10 @@ import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,7 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
-public class AuthenticationConfiguration {
+public class SecurityConfiguration {
   private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
 
   private final UserRepository userRepository;
@@ -27,7 +29,7 @@ public class AuthenticationConfiguration {
 
   private final long port;
 
-  public AuthenticationConfiguration(
+  public SecurityConfiguration(
       JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent,
       UserRepository userRepository,
       @NonNull @Value("${server.host}") String host,
@@ -61,7 +63,6 @@ public class AuthenticationConfiguration {
         .httpBasic(httpBasic -> httpBasic.disable())
         .logout(logout -> logout.disable())
         .redirectToHttps(Customizer.withDefaults())
-        .authenticationProvider(authenticationProvider)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
@@ -82,5 +83,10 @@ public class AuthenticationConfiguration {
   @Bean
   public BCryptPasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder(10);
+  }
+
+  @Bean
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
+    return config.getAuthenticationManager();
   }
 }

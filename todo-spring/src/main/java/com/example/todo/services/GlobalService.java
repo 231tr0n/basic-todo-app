@@ -17,8 +17,8 @@ import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -29,7 +29,6 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
 public class GlobalService implements UserDetailsService {
   @NonNull private final JwtService jwtService;
 
@@ -42,6 +41,21 @@ public class GlobalService implements UserDetailsService {
   @NonNull private final BCryptPasswordEncoder passwordEncoder;
 
   @NonNull private final AuthenticationManager authenticationManager;
+
+  public GlobalService(
+      JwtService jwtService,
+      UserRepository userRepository,
+      RoleRepository roleRepository,
+      TodoRepository todoRepository,
+      BCryptPasswordEncoder passwordEncoder,
+      @Lazy AuthenticationManager authenticationManager) {
+    this.jwtService = jwtService;
+    this.userRepository = userRepository;
+    this.roleRepository = roleRepository;
+    this.todoRepository = todoRepository;
+    this.passwordEncoder = passwordEncoder;
+    this.authenticationManager = authenticationManager;
+  }
 
   @Override
   public UserEntity loadUserByUsername(String username) {
