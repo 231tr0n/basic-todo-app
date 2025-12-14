@@ -16,8 +16,8 @@ import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -80,9 +80,9 @@ public class UserEntity implements UserDetails {
 
   @NotNull
   @Override
-  public List<GrantedAuthority> getAuthorities() {
+  public Set<GrantedAuthority> getAuthorities() {
     return getRoles().stream()
         .map(role -> (GrantedAuthority) new SimpleGrantedAuthority(role.toString()))
-        .toList();
+        .collect(Collectors.toSet());
   }
 }

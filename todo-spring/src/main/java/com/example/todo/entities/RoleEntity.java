@@ -15,7 +15,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Entity
@@ -37,7 +36,6 @@ public class RoleEntity {
 
   @NotNull
   @Enumerated(EnumType.STRING)
-  @Size(min = 1, max = 255)
   @Column(nullable = false)
   private RoleEnum role;
 

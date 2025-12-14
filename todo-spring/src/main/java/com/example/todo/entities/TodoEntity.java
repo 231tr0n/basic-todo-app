@@ -39,7 +39,6 @@ public class TodoEntity {
   private String description;
 
   @NotNull
-  @Size(min = 1, max = 255)
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private StatusEnum status;

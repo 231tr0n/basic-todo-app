@@ -71,15 +71,15 @@ public class GlobalService implements UserDetailsService {
     user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
     user.setEnabled(true);
     user.setLoggedOut(true);
-    Set<RoleEntity> roles = new HashSet<>();
+    userRepository.save(user);
+    user = userRepository.findByUsername(signUpDto.getUsername());
     for (RoleEnum role : signUpDto.getRoles()) {
       RoleEntity roleEntity = new RoleEntity();
       roleEntity.setRole(role);
       roleEntity.setUser(user);
-      roles.add(roleEntity);
+      roleEntity.setUser(user);
+      roleRepository.save(roleEntity);
     }
-    user.setRoles(roles);
-    userRepository.save(user);
   }
 
   public UserEntity signIn(SignInDto signInDto) {
