@@ -35,7 +35,7 @@ public class AuthenticationConfiguration {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
     DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(globalService);
-    authenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(10));
+    authenticationProvider.setPasswordEncoder(passwordEncoder());
 
     return http.cors(
             cors ->
@@ -70,5 +70,10 @@ public class AuthenticationConfiguration {
         .addFilterBefore(
             jwtAuthenticationFilterComponent, UsernamePasswordAuthenticationFilter.class)
         .build();
+  }
+
+  @Bean
+  public BCryptPasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder(10);
   }
 }

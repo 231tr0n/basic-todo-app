@@ -2,23 +2,22 @@ package com.example.todo.services;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.WebUtils;
 
 @Service
-@AllArgsConstructor
 public class SessionCookieService {
-
-  @Value("${cookie.name:token}")
-  @NonNull
   private final String sessionCookieName;
+  private final int expiry;
 
-  @Value("${jwt.expiry}")
-  @NonNull
-  private final Integer expiry;
+  public SessionCookieService(
+      @NonNull @Value("${cookie.name:token}") String sessionCookieName,
+      @Value("${jwt.expiry}") int expiry) {
+    this.sessionCookieName = sessionCookieName;
+    this.expiry = expiry;
+  }
 
   public Cookie generateSessionCookie(String value) {
     Cookie cookie = new Cookie(sessionCookieName, value);

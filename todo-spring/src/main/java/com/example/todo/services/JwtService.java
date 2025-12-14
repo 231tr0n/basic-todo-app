@@ -4,22 +4,20 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.example.todo.entities.UserEntity;
 import java.time.Instant;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
 public class JwtService {
-
-  @Value("${jwt.expiry}")
-  @NonNull
-  private final Integer expiry;
-
-  @Value("${jwt.secret}")
-  @NonNull
+  private final int expiry;
   private final String secret;
+
+  public JwtService(
+      @Value("${jwt.expiry}") int expiry, @Value("${jwt.secret}") @NonNull String secret) {
+    this.expiry = expiry;
+    this.secret = secret;
+  }
 
   public String generateJwt(@NonNull UserEntity user) {
     Instant now = Instant.now();
