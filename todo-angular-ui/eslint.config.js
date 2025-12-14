@@ -4,6 +4,7 @@ import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import angular from 'angular-eslint';
 import css from '@eslint/css';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default defineConfig([
 	{
@@ -22,8 +23,14 @@ export default defineConfig([
 			tseslint.configs.eslintRecommended,
 			tseslint.configs.strictTypeChecked,
 			tseslint.configs.stylisticTypeChecked,
-			angular.configs.tsAll
+			angular.configs.tsAll,
+			eslintConfigPrettier
 		],
+		languageOptions: {
+			parserOptions: {
+				projectService: true
+			}
+		},
 		processor: angular.processInlineTemplates,
 		rules: {
 			'@angular-eslint/directive-selector': [
@@ -34,7 +41,6 @@ export default defineConfig([
 					style: 'camelCase'
 				}
 			],
-			'prettier/prettier': 'error',
 			'@angular-eslint/component-selector': [
 				'error',
 				{
