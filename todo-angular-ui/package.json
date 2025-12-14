@@ -8,6 +8,7 @@
 		"watch": "ng build --watch --configuration development",
 		"test": "ng test",
 		"lint": "prettier --check . && ng lint",
+		"lint-fix": "prettier --list-different --write . && ng lint --fix",
 		"format": "prettier --list-different --write .",
 		"show-deps-updates": "npm-check-updates",
 		"update-deps": "npm-check-updates -u && npm install",
