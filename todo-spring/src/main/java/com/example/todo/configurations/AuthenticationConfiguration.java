@@ -4,7 +4,6 @@ import com.example.todo.components.JwtAuthenticationFilterComponent;
 import com.example.todo.enums.RoleEnum;
 import com.example.todo.repositories.UserRepository;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,18 +18,25 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
-@AllArgsConstructor
 public class AuthenticationConfiguration {
-  @NonNull private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
+  private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
 
-  @NonNull private final UserRepository userRepository;
+  private final UserRepository userRepository;
 
-  @NonNull
-  @Value("${server.host}")
   private final String host;
 
-  @Value("${server.port}")
   private final long port;
+
+  public AuthenticationConfiguration(
+      JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent,
+      UserRepository userRepository,
+      @NonNull @Value("${server.host}") String host,
+      @Value("${server.port}") long port) {
+    this.jwtAuthenticationFilterComponent = jwtAuthenticationFilterComponent;
+    this.userRepository = userRepository;
+    this.host = host;
+    this.port = port;
+  }
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
