@@ -63,6 +63,7 @@ public class SecurityConfiguration {
         .httpBasic(httpBasic -> httpBasic.disable())
         .logout(logout -> logout.disable())
         .redirectToHttps(Customizer.withDefaults())
+        .authenticationProvider(authenticationProvider)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
