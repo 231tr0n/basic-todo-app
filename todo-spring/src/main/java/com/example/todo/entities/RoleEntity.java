@@ -38,7 +38,7 @@ public class RoleEntity {
   @NotNull
   @Enumerated(EnumType.STRING)
   @Size(min = 1, max = 255)
-  @Column(nullable = false, unique = true)
+  @Column(nullable = false)
   private RoleEnum role;
 
   @NotNull
