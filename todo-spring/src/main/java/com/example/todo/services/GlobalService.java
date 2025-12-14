@@ -159,9 +159,9 @@ public class GlobalService implements UserDetailsService {
     return user.getTodos();
   }
 
-  public void updateTodo(UpdateTodoDto updateTodoDto) {
+  public void updateTodo(long id, UpdateTodoDto updateTodoDto) {
     UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUser(updateTodoDto.getId(), user).orElseThrow();
+    TodoEntity todo = todoRepository.findByIdAndUser(id, user).orElseThrow();
     if (updateTodoDto.getTitle() != null) {
       todo.setTitle(updateTodoDto.getTitle());
     }
@@ -171,9 +171,9 @@ public class GlobalService implements UserDetailsService {
     todoRepository.save(todo);
   }
 
-  public void patchTodo(PatchTodoDto patchTodoDto) {
+  public void patchTodo(long id, PatchTodoDto patchTodoDto) {
     UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUser(patchTodoDto.getId(), user).orElseThrow();
+    TodoEntity todo = todoRepository.findByIdAndUser(id, user).orElseThrow();
     todo.setStatus(patchTodoDto.getStatus());
     todoRepository.save(todo);
   }

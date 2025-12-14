@@ -18,11 +18,11 @@ import lombok.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -51,33 +51,34 @@ public class GlobalController {
   }
 
   @DeleteMapping("/user")
-  public String deleteUser() {
+  public String deleteUser(HttpServletResponse response) {
     globalService.deleteUser();
+    response.addCookie(sessionCookieService.deleteSessionCookie());
     return "redirect:/";
   }
 
-  @PostMapping("/todo")
+  @PostMapping("/todos")
   public void createTodo(@Valid @RequestBody CreateTodoDto createTodoDto) {
     globalService.createTodo(createTodoDto);
   }
 
-  @GetMapping("/todo")
+  @GetMapping("/todos")
   public void getTodo() {
     globalService.getTodo();
   }
 
-  @PutMapping("/todo")
-  public void updateTodo(@Valid @RequestBody UpdateTodoDto updateTodoDto) {
-    globalService.updateTodo(updateTodoDto);
+  @PutMapping("/todos/{id}")
+  public void updateTodo(@PathVariable long id, @Valid @RequestBody UpdateTodoDto updateTodoDto) {
+    globalService.updateTodo(id, updateTodoDto);
   }
 
-  @PatchMapping("/todo")
-  public void patchTodo(@Valid @RequestBody PatchTodoDto patchTodoDto) {
-    globalService.patchTodo(patchTodoDto);
+  @PatchMapping("/todos/{id}")
+  public void patchTodo(@PathVariable long id, @Valid @RequestBody PatchTodoDto patchTodoDto) {
+    globalService.patchTodo(id, patchTodoDto);
   }
 
-  @DeleteMapping("/todo")
-  public void deleteTodo(@RequestParam long id) {
+  @DeleteMapping("/todos/{id}")
+  public void deleteTodo(@PathVariable long id) {
     globalService.deleteTodo(id);
   }
 
