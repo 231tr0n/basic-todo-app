@@ -15,7 +15,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Data;
@@ -51,8 +50,8 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-  private Set<RoleEntity> roles = new HashSet<>();
+  @JsonIgnore
+  private Set<RoleEntity> roles;
 
   @JsonManagedReference
   @OneToMany(
@@ -60,8 +59,8 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-  private Set<TodoEntity> todos = new HashSet<>();
+  @JsonIgnore
+  private Set<TodoEntity> todos;
 
   @NotNull
   @Column(nullable = false)
@@ -84,5 +83,20 @@ public class UserEntity implements UserDetails {
     return getRoles().stream()
         .map(role -> (GrantedAuthority) new SimpleGrantedAuthority(role.toString()))
         .collect(Collectors.toSet());
+  }
+
+  @Override
+  public boolean isAccountNonExpired() {
+    return true;
+  }
+
+  @Override
+  public boolean isAccountNonLocked() {
+    return true;
+  }
+
+  @Override
+  public boolean isCredentialsNonExpired() {
+    return true;
   }
 }

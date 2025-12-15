@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,6 +18,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class SecurityConfiguration {
@@ -41,28 +44,13 @@ public class SecurityConfiguration {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
-    DaoAuthenticationProvider authenticationProvider =
-        new DaoAuthenticationProvider(username -> userRepository.findByUsername(username));
-    authenticationProvider.setPasswordEncoder(passwordEncoder());
-
-    return http.cors(
-            cors ->
-                cors.configurationSource(
-                    configurationSource -> {
-                      CorsConfiguration configuration = new CorsConfiguration();
-                      configuration.setAllowedOrigins(
-                          List.of(String.format("http://%s:%d", host, port)));
-                      configuration.setAllowedMethods(
-                          List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
-                      configuration.setAllowCredentials(true);
-                      return configuration;
-                    }))
+    return http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .csrf(csrf -> csrf.disable())
         .formLogin(form -> form.disable())
         .httpBasic(httpBasic -> httpBasic.disable())
         .logout(logout -> logout.disable())
         .redirectToHttps(redirect -> redirect.disable())
-        .authenticationProvider(authenticationProvider)
+        .authenticationProvider(authenticationProvider())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
@@ -78,6 +66,25 @@ public class SecurityConfiguration {
         .addFilterBefore(
             jwtAuthenticationFilterComponent, UsernamePasswordAuthenticationFilter.class)
         .build();
+  }
+
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOrigins(List.of(String.format("http://%s:%d", host, port)));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
+    configuration.setAllowCredentials(true);
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+  }
+
+  @Bean
+  public AuthenticationProvider authenticationProvider() {
+    DaoAuthenticationProvider authenticationProvider =
+        new DaoAuthenticationProvider(username -> userRepository.findByUsername(username));
+    authenticationProvider.setPasswordEncoder(passwordEncoder());
+    return authenticationProvider;
   }
 
   @Bean
