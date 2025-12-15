@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalControllerAdvice {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<String> handleException(Exception e) {
+    e.printStackTrace();
     return ResponseEntity.badRequest().body("Error handling request");
   }
 
@@ -52,6 +53,7 @@ public class GlobalControllerAdvice {
 
   @ExceptionHandler(RuntimeException.class)
   public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
+    e.printStackTrace();
     return ResponseEntity.internalServerError().body("Runtime error handling request");
   }
 }

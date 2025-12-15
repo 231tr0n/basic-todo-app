@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Data;
@@ -50,7 +51,7 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonIgnore
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private Set<RoleEntity> roles;
 
   @JsonManagedReference
@@ -80,9 +81,10 @@ public class UserEntity implements UserDetails {
   @NotNull
   @Override
   public Set<GrantedAuthority> getAuthorities() {
-    return getRoles().stream()
-        .map(role -> (GrantedAuthority) new SimpleGrantedAuthority(role.toString()))
-        .collect(Collectors.toSet());
+    return new HashSet<>(getRoles())
+        .stream()
+            .map(role -> (GrantedAuthority) new SimpleGrantedAuthority(role.toString()))
+            .collect(Collectors.toSet());
   }
 
   @Override
