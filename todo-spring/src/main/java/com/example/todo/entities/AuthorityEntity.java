@@ -1,12 +1,9 @@
 package com.example.todo.entities;
 
-import com.example.todo.enums.RoleEnum;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,18 +12,20 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
 
 @Entity
 @Table(
-    name = "roles",
+    name = "authorities",
     uniqueConstraints = {
       @UniqueConstraint(
-          name = "unique_user_role",
-          columnNames = {"user_id", "role"})
+          name = "unique_user_authority",
+          columnNames = {"user_id", "authority"})
     })
 @Data
-public class RoleEntity {
+public class AuthorityEntity implements GrantedAuthority {
   @Id
   @NotNull
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,9 +34,9 @@ public class RoleEntity {
   private long id;
 
   @NotNull
-  @Enumerated(EnumType.STRING)
+  @Size(min = 1, max = 255)
   @Column(nullable = false)
-  private RoleEnum role;
+  private String authority;
 
   @NotNull
   @JsonBackReference

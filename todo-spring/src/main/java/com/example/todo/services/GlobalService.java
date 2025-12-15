@@ -7,15 +7,13 @@ import com.example.todo.dtos.SignInDto;
 import com.example.todo.dtos.SignUpDto;
 import com.example.todo.dtos.UpdateTodoDto;
 import com.example.todo.dtos.UpdateUserDto;
-import com.example.todo.entities.RoleEntity;
+import com.example.todo.entities.AuthorityEntity;
 import com.example.todo.entities.TodoEntity;
+import com.example.todo.entities.TodoEntity.StatusEnum;
 import com.example.todo.entities.UserEntity;
-import com.example.todo.enums.RoleEnum;
-import com.example.todo.enums.StatusEnum;
-import com.example.todo.repositories.RoleRepository;
+import com.example.todo.repositories.AuthorityRepository;
 import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
-import java.util.HashSet;
 import java.util.Set;
 import lombok.NonNull;
 import org.springframework.context.annotation.Lazy;
@@ -31,27 +29,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class GlobalService implements UserDetailsService {
   @NonNull private final JwtService jwtService;
-
   @NonNull private final UserRepository userRepository;
-
-  @NonNull private final RoleRepository roleRepository;
-
+  @NonNull private final AuthorityRepository authorityRepository;
   @NonNull private final TodoRepository todoRepository;
-
   @NonNull private final BCryptPasswordEncoder passwordEncoder;
-
   @NonNull private final AuthenticationManager authenticationManager;
 
   public GlobalService(
       JwtService jwtService,
       UserRepository userRepository,
-      RoleRepository roleRepository,
+      AuthorityRepository authorityRepository,
       TodoRepository todoRepository,
       BCryptPasswordEncoder passwordEncoder,
       @Lazy AuthenticationManager authenticationManager) {
     this.jwtService = jwtService;
     this.userRepository = userRepository;
-    this.roleRepository = roleRepository;
+    this.authorityRepository = authorityRepository;
     this.todoRepository = todoRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
@@ -59,11 +52,11 @@ public class GlobalService implements UserDetailsService {
 
   @Override
   public UserEntity loadUserByUsername(String username) {
-    return userRepository.findByUsername(username);
+    return userRepository.findByUsername(username).orElseThrow();
   }
 
   public void signUp(SignUpDto signUpDto) {
-    if (userRepository.findByUsername(signUpDto.getUsername()) != null) {
+    if (!userRepository.findByUsername(signUpDto.getUsername()).isPresent()) {
       throw new IllegalArgumentException("Username already exists");
     }
     UserEntity user = new UserEntity();
@@ -72,13 +65,12 @@ public class GlobalService implements UserDetailsService {
     user.setEnabled(true);
     user.setLoggedOut(true);
     userRepository.save(user);
-    user = userRepository.findByUsername(signUpDto.getUsername());
-    for (RoleEnum role : signUpDto.getRoles()) {
-      RoleEntity roleEntity = new RoleEntity();
-      roleEntity.setRole(role);
-      roleEntity.setUser(user);
-      roleEntity.setUser(user);
-      roleRepository.save(roleEntity);
+    user = userRepository.findByUsername(signUpDto.getUsername()).orElseThrow();
+    for (String authority : signUpDto.getAuthorities()) {
+      AuthorityEntity authorityEntity = new AuthorityEntity();
+      authorityEntity.setAuthority(authority);
+      authorityEntity.setUser(user);
+      authorityRepository.save(authorityEntity);
     }
   }
 
@@ -115,18 +107,16 @@ public class GlobalService implements UserDetailsService {
       }
       user.setUsername(updateUserDto.getUsername());
     }
-    if (updateUserDto.getRoles() != null) {
-      roleRepository.deleteAllByUser(user);
-      Set<RoleEntity> roles = new HashSet<>();
-      for (RoleEnum role : updateUserDto.getRoles()) {
-        RoleEntity roleEntity = new RoleEntity();
-        roleEntity.setRole(role);
-        roleEntity.setUser(user);
-        roles.add(roleEntity);
-      }
-      user.setRoles(roles);
-    }
     userRepository.save(user);
+    if (updateUserDto.getAuthorities() != null) {
+      authorityRepository.deleteAllByUser(user);
+      for (String authority : updateUserDto.getAuthorities()) {
+        AuthorityEntity authorityEntity = new AuthorityEntity();
+        authorityEntity.setAuthority(authority);
+        authorityEntity.setUser(user);
+        authorityRepository.save(authorityEntity);
+      }
+    }
   }
 
   public void patchUser(PatchUserDto patchUserDto) {
@@ -140,7 +130,7 @@ public class GlobalService implements UserDetailsService {
   public void deleteUser() {
     UserEntity user = getUser();
     todoRepository.deleteAllByUser(user);
-    roleRepository.deleteAllByUser(user);
+    authorityRepository.deleteAllByUser(user);
     userRepository.delete(user);
   }
 

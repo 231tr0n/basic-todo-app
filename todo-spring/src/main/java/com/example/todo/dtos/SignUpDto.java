@@ -1,6 +1,5 @@
 package com.example.todo.dtos;
 
-import com.example.todo.enums.RoleEnum;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.Set;
@@ -18,5 +17,5 @@ public class SignUpDto {
 
   @NotNull
   @Size(min = 1, max = 10)
-  private Set<RoleEnum> roles;
+  private Set<String> authorities;
 }

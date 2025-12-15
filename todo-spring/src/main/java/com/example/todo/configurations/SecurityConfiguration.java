@@ -1,7 +1,7 @@
 package com.example.todo.configurations;
 
 import com.example.todo.components.JwtAuthenticationFilterComponent;
-import com.example.todo.enums.RoleEnum;
+import com.example.todo.constants.Constants;
 import com.example.todo.repositories.UserRepository;
 import java.util.List;
 import lombok.NonNull;
@@ -56,11 +56,13 @@ public class SecurityConfiguration {
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers("/api/user")
-                    .hasRole(RoleEnum.USER.toString())
-                    .requestMatchers("/api/todo")
-                    .hasRole(RoleEnum.USER.toString())
+                    .hasRole(Constants.USER_AUTHORITY)
+                    .requestMatchers("/api/todos")
+                    .hasRole(Constants.USER_AUTHORITY)
+                    .requestMatchers("/api/signout")
+                    .authenticated()
                     .requestMatchers("/actuator/**")
-                    .hasRole(RoleEnum.ADMIN.toString())
+                    .hasRole(Constants.ADMIN_AUTHORITY)
                     .anyRequest()
                     .permitAll())
         .addFilterBefore(

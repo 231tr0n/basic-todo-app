@@ -1,6 +1,5 @@
 package com.example.todo.entities;
 
-import com.example.todo.enums.StatusEnum;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
@@ -49,4 +48,10 @@ public class TodoEntity {
   @JoinColumn(name = "user_id", referencedColumnName = "id")
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private UserEntity user;
+
+  public enum StatusEnum {
+    NOT_STARTED,
+    IN_PROGRESS,
+    COMPLETED
+  }
 }

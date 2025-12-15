@@ -12,15 +12,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.Data;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
@@ -51,8 +46,8 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-  private Set<RoleEntity> roles;
+  @JsonIgnore
+  private Set<AuthorityEntity> authorities;
 
   @JsonManagedReference
   @OneToMany(
@@ -73,32 +68,15 @@ public class UserEntity implements UserDetails {
   @JsonIgnore
   private boolean loggedOut;
 
-  @Transient @JsonIgnore private Set<GrantedAuthority> authorities;
-  @Transient @JsonIgnore private boolean accountNonExpired;
-  @Transient @JsonIgnore private boolean accountNonLocked;
-  @Transient @JsonIgnore private boolean credentialsNonExpired;
+  @JsonIgnore
+  @Column(nullable = false)
+  private boolean accountNonExpired;
 
-  @NotNull
-  @Override
-  public Set<GrantedAuthority> getAuthorities() {
-    return new HashSet<>(getRoles())
-        .stream()
-            .map(role -> (GrantedAuthority) new SimpleGrantedAuthority(role.toString()))
-            .collect(Collectors.toSet());
-  }
+  @JsonIgnore
+  @Column(nullable = false)
+  private boolean accountNonLocked;
 
-  @Override
-  public boolean isAccountNonExpired() {
-    return true;
-  }
-
-  @Override
-  public boolean isAccountNonLocked() {
-    return true;
-  }
-
-  @Override
-  public boolean isCredentialsNonExpired() {
-    return true;
-  }
+  @JsonIgnore
+  @Column(nullable = false)
+  private boolean credentialsNonExpired;
 }
