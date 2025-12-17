@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.ToString;
 
 @Entity
 @Table(name = "todos")
@@ -47,6 +48,7 @@ public class TodoEntity {
   @ManyToOne
   @JoinColumn(name = "user_id", referencedColumnName = "id")
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  @ToString.Exclude
   private UserEntity user;
 
   public enum StatusEnum {

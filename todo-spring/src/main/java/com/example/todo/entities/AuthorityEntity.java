@@ -14,6 +14,7 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 
 @Entity
@@ -43,5 +44,6 @@ public class AuthorityEntity implements GrantedAuthority {
   @ManyToOne
   @JoinColumn(name = "user_id", referencedColumnName = "id")
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  @ToString.Exclude
   private UserEntity user;
 }
