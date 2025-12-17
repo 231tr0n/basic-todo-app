@@ -14,6 +14,7 @@ import com.example.todo.entities.UserEntity;
 import com.example.todo.repositories.AuthorityRepository;
 import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import lombok.NonNull;
 import org.springframework.context.annotation.Lazy;
@@ -52,11 +53,11 @@ public class GlobalService implements UserDetailsService {
 
   @Override
   public UserEntity loadUserByUsername(String username) {
-    return userRepository.findByUsername(username).orElseThrow();
+    return userRepository.findByUsername(username);
   }
 
   public void signUp(SignUpDto signUpDto) {
-    if (!userRepository.findByUsername(signUpDto.getUsername()).isPresent()) {
+    if (userRepository.existsByUsername(signUpDto.getUsername())) {
       throw new IllegalArgumentException("Username already exists");
     }
     UserEntity user = new UserEntity();
@@ -65,7 +66,7 @@ public class GlobalService implements UserDetailsService {
     user.setEnabled(true);
     user.setLoggedOut(true);
     userRepository.save(user);
-    user = userRepository.findByUsername(signUpDto.getUsername()).orElseThrow();
+    user = userRepository.findByUsername(signUpDto.getUsername());
     for (String authority : signUpDto.getAuthorities()) {
       AuthorityEntity authorityEntity = new AuthorityEntity();
       authorityEntity.setAuthority(authority);
@@ -102,7 +103,7 @@ public class GlobalService implements UserDetailsService {
   public void updateUser(UpdateUserDto updateUserDto) {
     UserEntity user = getUser();
     if (updateUserDto.getUsername() != null) {
-      if (userRepository.findByUsername(updateUserDto.getUsername()) != null) {
+      if (userRepository.existsByUsername(updateUserDto.getUsername())) {
         throw new IllegalArgumentException("Username already exists");
       }
       user.setUsername(updateUserDto.getUsername());
@@ -151,7 +152,10 @@ public class GlobalService implements UserDetailsService {
 
   public void updateTodo(long id, UpdateTodoDto updateTodoDto) {
     UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUser(id, user).orElseThrow();
+    TodoEntity todo = todoRepository.findByIdAndUser(id, user);
+    if (todo == null) {
+      throw new NoSuchElementException("Todo not found");
+    }
     if (updateTodoDto.getTitle() != null) {
       todo.setTitle(updateTodoDto.getTitle());
     }
@@ -163,14 +167,20 @@ public class GlobalService implements UserDetailsService {
 
   public void patchTodo(long id, PatchTodoDto patchTodoDto) {
     UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUser(id, user).orElseThrow();
+    TodoEntity todo = todoRepository.findByIdAndUser(id, user);
+    if (todo == null) {
+      throw new NoSuchElementException("Todo not found");
+    }
     todo.setStatus(patchTodoDto.getStatus());
     todoRepository.save(todo);
   }
 
   public void deleteTodo(long id) {
     UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUser(id, user).orElseThrow();
+    TodoEntity todo = todoRepository.findByIdAndUser(id, user);
+    if (todo == null) {
+      throw new NoSuchElementException("Todo not found");
+    }
     todoRepository.delete(todo);
   }
 }
