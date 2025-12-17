@@ -14,8 +14,8 @@ import com.example.todo.entities.UserEntity;
 import com.example.todo.repositories.AuthorityRepository;
 import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
+import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import lombok.NonNull;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -148,7 +148,7 @@ public class GlobalService implements UserDetailsService {
     todoRepository.save(todo);
   }
 
-  public Set<TodoEntity> getTodo() {
+  public List<TodoEntity> getTodo() {
     UserEntity user = getUser();
     return user.getTodos();
   }

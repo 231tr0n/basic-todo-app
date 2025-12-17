@@ -14,7 +14,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.Set;
+import java.util.List;
 import lombok.Data;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -47,7 +47,7 @@ public class UserEntity implements UserDetails {
       orphanRemoval = true,
       fetch = FetchType.LAZY)
   @JsonIgnore
-  private Set<AuthorityEntity> authorities;
+  private List<AuthorityEntity> authorities;
 
   @JsonManagedReference
   @OneToMany(
@@ -56,7 +56,7 @@ public class UserEntity implements UserDetails {
       orphanRemoval = true,
       fetch = FetchType.LAZY)
   @JsonIgnore
-  private Set<TodoEntity> todos;
+  private List<TodoEntity> todos;
 
   @NotNull
   @Column(nullable = false)
