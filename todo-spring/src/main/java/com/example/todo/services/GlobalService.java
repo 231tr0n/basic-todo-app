@@ -65,6 +65,9 @@ public class GlobalService implements UserDetailsService {
     user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
     user.setEnabled(true);
     user.setLoggedOut(true);
+    user.setAccountNonLocked(true);
+    user.setAccountNonExpired(true);
+    user.setCredentialsNonExpired(true);
     userRepository.save(user);
     user = userRepository.findByUsername(signUpDto.getUsername());
     for (String authority : signUpDto.getAuthorities()) {
