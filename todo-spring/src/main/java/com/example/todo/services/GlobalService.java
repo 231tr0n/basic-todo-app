@@ -16,45 +16,25 @@ import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class GlobalService implements UserDetailsService {
+@AllArgsConstructor
+public class GlobalService {
   @NonNull private final JwtService jwtService;
   @NonNull private final UserRepository userRepository;
   @NonNull private final AuthorityRepository authorityRepository;
   @NonNull private final TodoRepository todoRepository;
   @NonNull private final BCryptPasswordEncoder passwordEncoder;
   @NonNull private final AuthenticationManager authenticationManager;
-
-  public GlobalService(
-      JwtService jwtService,
-      UserRepository userRepository,
-      AuthorityRepository authorityRepository,
-      TodoRepository todoRepository,
-      BCryptPasswordEncoder passwordEncoder,
-      @Lazy AuthenticationManager authenticationManager) {
-    this.jwtService = jwtService;
-    this.userRepository = userRepository;
-    this.authorityRepository = authorityRepository;
-    this.todoRepository = todoRepository;
-    this.passwordEncoder = passwordEncoder;
-    this.authenticationManager = authenticationManager;
-  }
-
-  @Override
-  public UserEntity loadUserByUsername(String username) {
-    return userRepository.findByUsername(username);
-  }
 
   public void signUp(SignUpDto signUpDto) {
     if (userRepository.existsByUsername(signUpDto.getUsername())) {
