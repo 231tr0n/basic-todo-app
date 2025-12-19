@@ -53,20 +53,21 @@ public class SecurityConfiguration {
         .authenticationProvider(authenticationProvider())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(
+            jwtAuthenticationFilterComponent, UsernamePasswordAuthenticationFilter.class)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/user")
-                    .hasRole(Constants.USER_AUTHORITY)
-                    .requestMatchers("/api/todos")
-                    .hasRole(Constants.USER_AUTHORITY)
+                auth.requestMatchers("/api/signup")
+                    .permitAll()
+                    .requestMatchers("/api/user", "/api/todos", "/api/todos/**")
+                    // .hasRole(Constants.USER_AUTHORITY)
+                    .authenticated()
                     .requestMatchers("/api/signout")
                     .authenticated()
                     .requestMatchers("/actuator/**")
                     .hasRole(Constants.ADMIN_AUTHORITY)
                     .anyRequest()
                     .permitAll())
-        .addFilterBefore(
-            jwtAuthenticationFilterComponent, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
 

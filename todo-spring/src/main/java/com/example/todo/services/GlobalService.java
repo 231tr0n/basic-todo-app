@@ -133,8 +133,6 @@ public class GlobalService implements UserDetailsService {
 
   public void deleteUser() {
     UserEntity user = getUser();
-    todoRepository.deleteAllByUser(user);
-    authorityRepository.deleteAllByUser(user);
     userRepository.delete(user);
   }
 

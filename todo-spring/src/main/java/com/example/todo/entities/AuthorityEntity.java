@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PreRemove;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
@@ -46,4 +47,9 @@ public class AuthorityEntity implements GrantedAuthority {
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   @ToString.Exclude
   private UserEntity user;
+
+  @PreRemove
+  public void preRemove() {
+    this.user.getAuthorities().remove(this);
+  }
 }

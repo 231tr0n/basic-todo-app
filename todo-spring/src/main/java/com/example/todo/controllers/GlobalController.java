@@ -7,12 +7,14 @@ import com.example.todo.dtos.SignInDto;
 import com.example.todo.dtos.SignUpDto;
 import com.example.todo.dtos.UpdateTodoDto;
 import com.example.todo.dtos.UpdateUserDto;
+import com.example.todo.entities.TodoEntity;
 import com.example.todo.entities.UserEntity;
 import com.example.todo.services.GlobalService;
 import com.example.todo.services.JwtService;
 import com.example.todo.services.SessionCookieService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -63,8 +65,8 @@ public class GlobalController {
   }
 
   @GetMapping("/todos")
-  public void getTodo() {
-    globalService.getTodo();
+  public List<TodoEntity> getTodo() {
+    return globalService.getTodo();
   }
 
   @PutMapping("/todos/{id}")
