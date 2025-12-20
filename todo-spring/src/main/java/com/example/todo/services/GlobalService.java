@@ -66,7 +66,7 @@ public class GlobalService {
     UserEntity user = (UserEntity) auth.getPrincipal();
     user.setLoggedOut(false);
     userRepository.save(user);
-    return (UserEntity) auth.getPrincipal();
+    return user;
   }
 
   public void signOut() {

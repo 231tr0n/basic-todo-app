@@ -35,7 +35,7 @@ public class JwtAuthenticationFilterComponent extends OncePerRequestFilter {
       Cookie cookie = sessionCookieService.getSessionCookie(request);
       if (cookie != null) {
         String username = jwtService.decodeJwt(cookie.getValue());
-        UserEntity user = userRepository.findByUsername(username);
+        UserEntity user = userRepository.findByUsernameAndFetchAuthorities(username);
         if (user != null && user.isEnabled() && !user.isLoggedOut()) {
           UsernamePasswordAuthenticationToken authToken =
               new UsernamePasswordAuthenticationToken(

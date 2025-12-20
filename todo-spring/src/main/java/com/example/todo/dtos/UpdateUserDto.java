@@ -1,7 +1,7 @@
 package com.example.todo.dtos;
 
 import jakarta.validation.constraints.Size;
-import java.util.List;
+import java.util.Set;
 import lombok.Data;
 
 @Data
@@ -10,5 +10,5 @@ public class UpdateUserDto {
   private String username;
 
   @Size(min = 1, max = 10)
-  private List<String> authorities;
+  private Set<String> authorities;
 }

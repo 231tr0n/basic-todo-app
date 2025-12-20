@@ -45,7 +45,7 @@ public class UserEntity implements UserDetails {
       mappedBy = "user",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.EAGER)
+      fetch = FetchType.LAZY)
   @JsonIgnore
   private List<AuthorityEntity> authorities;
 
@@ -54,7 +54,7 @@ public class UserEntity implements UserDetails {
       mappedBy = "user",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.EAGER)
+      fetch = FetchType.LAZY)
   @JsonIgnore
   private List<TodoEntity> todos;
 

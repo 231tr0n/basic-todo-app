@@ -2,7 +2,7 @@ package com.example.todo.dtos;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.List;
+import java.util.Set;
 import lombok.Data;
 
 @Data
@@ -17,5 +17,5 @@ public class SignUpDto {
 
   @NotNull
   @Size(min = 1, max = 10)
-  private List<String> authorities;
+  private Set<String> authorities;
 }

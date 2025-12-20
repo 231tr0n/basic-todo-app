@@ -13,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -60,8 +61,7 @@ public class SecurityConfiguration {
                 auth.requestMatchers("/api/signup")
                     .permitAll()
                     .requestMatchers("/api/user", "/api/todos", "/api/todos/**")
-                    // .hasRole(Constants.USER_AUTHORITY)
-                    .authenticated()
+                    .hasRole(Constants.USER_AUTHORITY)
                     .requestMatchers("/api/signout")
                     .authenticated()
                     .requestMatchers("/actuator/**")
@@ -98,5 +98,10 @@ public class SecurityConfiguration {
   @Bean
   public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
     return config.getAuthenticationManager();
+  }
+
+  @Bean
+  public GrantedAuthorityDefaults grantedAuthorityDefaults() {
+    return new GrantedAuthorityDefaults("");
   }
 }
