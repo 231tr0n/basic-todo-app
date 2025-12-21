@@ -118,6 +118,8 @@ public class GlobalService {
   @Transactional
   public void deleteUser() {
     UserEntity user = getUser();
+    todoRepository.deleteAllByUserId(user.getId());
+    authorityRepository.deleteAllByUserId(user.getId());
     userRepository.deleteById(user.getId());
   }
 
@@ -133,7 +135,7 @@ public class GlobalService {
 
   public List<TodoEntity> getTodo() {
     UserEntity user = getUser();
-    return user.getTodos();
+    return todoRepository.findByUserId(user.getId());
   }
 
   public void updateTodo(long id, UpdateTodoDto updateTodoDto) {
