@@ -118,7 +118,7 @@ public class GlobalService {
   @Transactional
   public void deleteUser() {
     UserEntity user = getUser();
-    userRepository.delete(user);
+    userRepository.deleteById(user.getId());
   }
 
   public void createTodo(CreateTodoDto createTodoDto) {
@@ -167,6 +167,6 @@ public class GlobalService {
     if (todo == null) {
       throw new NoSuchElementException("Todo not found");
     }
-    todoRepository.delete(todo);
+    todoRepository.deleteById(todo.getId());
   }
 }

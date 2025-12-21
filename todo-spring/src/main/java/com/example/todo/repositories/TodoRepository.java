@@ -12,4 +12,8 @@ public interface TodoRepository extends JpaRepository<TodoEntity, Long> {
 
   @Query("SELECT t FROM TodoEntity t WHERE t.id = :id AND t.user.id = :userId")
   TodoEntity findByIdAndUserId(long id, long userId);
+
+  @Modifying
+  @Query("DELETE FROM TodoEntity t WHERE t.id = :id")
+  void deleteById(long id);
 }
