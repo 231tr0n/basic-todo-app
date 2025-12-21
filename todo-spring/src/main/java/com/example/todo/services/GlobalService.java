@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -36,8 +37,9 @@ public class GlobalService {
   @NonNull private final BCryptPasswordEncoder passwordEncoder;
   @NonNull private final AuthenticationManager authenticationManager;
 
+  @Transactional
   public void signUp(SignUpDto signUpDto) {
-    if (userRepository.existsByUsername(signUpDto.getUsername())) {
+    if (userRepository.findByUsername(signUpDto.getUsername()) != null) {
       throw new IllegalArgumentException("Username already exists");
     }
     UserEntity user = new UserEntity();
@@ -63,6 +65,7 @@ public class GlobalService {
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
                 signInDto.getUsername(), signInDto.getPassword()));
+    SecurityContextHolder.getContext().setAuthentication(auth);
     UserEntity user = (UserEntity) auth.getPrincipal();
     user.setLoggedOut(false);
     userRepository.save(user);
@@ -83,17 +86,18 @@ public class GlobalService {
     return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
   }
 
+  @Transactional
   public void updateUser(UpdateUserDto updateUserDto) {
     UserEntity user = getUser();
     if (updateUserDto.getUsername() != null) {
-      if (userRepository.existsByUsername(updateUserDto.getUsername())) {
+      if (userRepository.findByUsername(updateUserDto.getUsername()) != null) {
         throw new IllegalArgumentException("Username already exists");
       }
       user.setUsername(updateUserDto.getUsername());
     }
     userRepository.save(user);
     if (updateUserDto.getAuthorities() != null) {
-      authorityRepository.deleteAllByUser(user);
+      authorityRepository.deleteAllByUserId(user.getId());
       for (String authority : updateUserDto.getAuthorities()) {
         AuthorityEntity authorityEntity = new AuthorityEntity();
         authorityEntity.setAuthority(authority);
@@ -111,6 +115,7 @@ public class GlobalService {
     userRepository.save(user);
   }
 
+  @Transactional
   public void deleteUser() {
     UserEntity user = getUser();
     userRepository.delete(user);
@@ -133,7 +138,7 @@ public class GlobalService {
 
   public void updateTodo(long id, UpdateTodoDto updateTodoDto) {
     UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUser(id, user);
+    TodoEntity todo = todoRepository.findByIdAndUserId(id, user.getId());
     if (todo == null) {
       throw new NoSuchElementException("Todo not found");
     }
@@ -148,7 +153,7 @@ public class GlobalService {
 
   public void patchTodo(long id, PatchTodoDto patchTodoDto) {
     UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUser(id, user);
+    TodoEntity todo = todoRepository.findByIdAndUserId(id, user.getId());
     if (todo == null) {
       throw new NoSuchElementException("Todo not found");
     }
@@ -158,7 +163,7 @@ public class GlobalService {
 
   public void deleteTodo(long id) {
     UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUser(id, user);
+    TodoEntity todo = todoRepository.findByIdAndUserId(id, user.getId());
     if (todo == null) {
       throw new NoSuchElementException("Todo not found");
     }

@@ -11,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PreRemove;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -56,10 +55,5 @@ public class TodoEntity {
     NOT_STARTED,
     IN_PROGRESS,
     COMPLETED
-  }
-
-  @PreRemove
-  public void preRemove() {
-    this.user.getTodos().remove(this);
   }
 }
