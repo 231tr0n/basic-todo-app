@@ -14,6 +14,7 @@ import com.example.todo.entities.UserEntity;
 import com.example.todo.repositories.AuthorityRepository;
 import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.AllArgsConstructor;
@@ -38,6 +39,7 @@ public class GlobalService {
   @NonNull private final AuthenticationManager authenticationManager;
 
   @Transactional
+  @CircuitBreaker(name = "todo")
   public void signUp(SignUpDto signUpDto) {
     if (userRepository.findByUsername(signUpDto.getUsername()) != null) {
       throw new IllegalArgumentException("Username already exists");
@@ -123,6 +125,7 @@ public class GlobalService {
     userRepository.deleteById(user.getId());
   }
 
+  @CircuitBreaker(name = "todo")
   public void createTodo(CreateTodoDto createTodoDto) {
     UserEntity user = getUser();
     TodoEntity todo = new TodoEntity();
