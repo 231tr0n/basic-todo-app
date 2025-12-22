@@ -50,14 +50,14 @@
 		"@angular/compiler-cli": "^21.0.6",
 		"@eslint/css": "^0.14.1",
 		"angular-eslint": "21.1.0",
-		"eslint": "^9.39.2",
+		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-prettier": "^5.5.4",
 		"jsdom": "^27.3.0",
 		"npm-check-updates": "^19.2.0",
 		"prettier": "^3.7.4",
 		"typescript": "~5.9.3",
-		"typescript-eslint": "8.50.0",
+		"typescript-eslint": "8.47.0",
 		"vitest": "^4.0.16"
 	}
 }
