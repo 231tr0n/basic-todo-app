@@ -15,7 +15,7 @@ import {
 @Injectable({
 	providedIn: 'root'
 })
-export class GlobalService {
+export class GlobalApi {
 	private readonly http = inject(HttpClient);
 
 	signIn(dto: SignInDto) {

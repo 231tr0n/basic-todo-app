@@ -1,0 +1,6 @@
+.user-signing-container {
+	position: fixed;
+	top: 50vh;
+	left: 50vw;
+	transform: translate(-50%, -50%);
+}

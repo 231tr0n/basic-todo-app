@@ -48,7 +48,8 @@ export default defineConfig([
 					prefix: 'app',
 					style: 'kebab-case'
 				}
-			]
+			],
+			'@angular-eslint/component-class-suffix': 'off'
 		}
 	},
 	{
