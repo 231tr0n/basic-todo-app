@@ -11,15 +11,22 @@ import {
 	UpdateUserDto,
 	UserDto
 } from '../types/types';
+import { Session } from './session';
+import { tap } from 'rxjs';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class GlobalApi {
 	private readonly http = inject(HttpClient);
+	private readonly session = inject(Session);
 
 	signIn(dto: SignInDto) {
-		return this.http.post<UserDto>('/api/signin', dto);
+		return this.http.post<UserDto>('/api/signin', dto).pipe(
+			tap((value) => {
+				this.session.loggedInUser.next(value);
+			})
+		);
 	}
 
 	signUp(dto: SignUpDto) {
@@ -27,24 +34,15 @@ export class GlobalApi {
 	}
 
 	signOut() {
-		return this.http.post('/api/signout', {});
+		return this.http.post('/api/signout', {}).pipe(
+			tap(() => {
+				this.session.loggedInUser.next(null);
+			})
+		);
 	}
 
 	getUser() {
 		return this.http.get<UserDto>('/api/user');
-	}
-
-	userLoggedIn() {
-		return new Promise<boolean>((resolve) => {
-			this.getUser().subscribe({
-				error: () => {
-					resolve(false);
-				},
-				next: () => {
-					resolve(true);
-				}
-			});
-		});
 	}
 
 	deleteUser() {
