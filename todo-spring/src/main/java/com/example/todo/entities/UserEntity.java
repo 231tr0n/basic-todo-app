@@ -46,7 +46,7 @@ public class UserEntity implements UserDetails {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonIgnore
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private List<AuthorityEntity> authorities;
 
   @JsonManagedReference
