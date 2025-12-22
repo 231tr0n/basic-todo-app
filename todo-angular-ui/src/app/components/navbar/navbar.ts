@@ -4,10 +4,10 @@ import { MatIcon } from '@angular/material/icon';
 import { MatToolbar } from '@angular/material/toolbar';
 
 @Component({
-	selector: 'app-header',
-	imports: [MatToolbar, MatIcon, MatButton],
-	templateUrl: './header.html',
-	styleUrl: './header.css',
+	selector: 'app-navbar',
+	imports: [MatIcon, MatButton, MatToolbar],
+	templateUrl: './navbar.html',
+	styleUrl: './navbar.css',
 	changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Navbar {}
