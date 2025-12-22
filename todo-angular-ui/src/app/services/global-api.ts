@@ -34,6 +34,19 @@ export class GlobalApi {
 		return this.http.get<UserDto>('/api/user');
 	}
 
+	userLoggedIn() {
+		return new Promise<boolean>((resolve) => {
+			this.getUser().subscribe({
+				error: () => {
+					resolve(false);
+				},
+				next: () => {
+					resolve(true);
+				}
+			});
+		});
+	}
+
 	deleteUser() {
 		return this.http.delete('/api/user');
 	}

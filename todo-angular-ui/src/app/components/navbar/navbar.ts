@@ -10,4 +10,16 @@ import { MatToolbar } from '@angular/material/toolbar';
 	styleUrl: './navbar.css',
 	changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class Navbar {}
+export class Navbar {
+	protected darkMode = false;
+
+	toggleMode() {
+		if (document.body.classList.contains('dark')) {
+			document.body.classList.remove('dark');
+			this.darkMode = false;
+		} else {
+			document.body.classList.add('dark');
+			this.darkMode = true;
+		}
+	}
+}

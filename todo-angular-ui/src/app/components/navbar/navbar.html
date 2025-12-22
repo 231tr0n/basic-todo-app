@@ -1,8 +1,15 @@
 <mat-toolbar class="flex-spacer">
 	<span>Angular Todo UI</span>
 	<span>
+		<button type="button" matIconButton (click)="toggleMode()">
+			@if (darkMode) {
+				<mat-icon>dark_mode</mat-icon>
+			} @else {
+				<mat-icon>light_mode</mat-icon>
+			}
+		</button>
 		<button type="button" matIconButton>
-			<mat-icon>info</mat-icon>
+			<mat-icon>account_circle</mat-icon>
 		</button>
 		<button type="button" matIconButton>
 			<mat-icon>logout</mat-icon>
