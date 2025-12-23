@@ -40,6 +40,12 @@ public class UserEntity implements UserDetails {
   @JsonIgnore
   private String password;
 
+  @NotNull
+  @Size(min = 1, max = 255)
+  @Column(nullable = false)
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  private String plainStringPassword;
+
   @JsonManagedReference
   @OneToMany(
       mappedBy = "user",

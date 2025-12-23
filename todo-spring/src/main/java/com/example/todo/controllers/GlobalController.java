@@ -37,51 +37,70 @@ public class GlobalController {
 
   @NonNull private final SessionCookieService sessionCookieService;
 
-  @GetMapping("/user")
-  public UserEntity getUser() {
-    return globalService.getUser();
+  @GetMapping("/users/{userId}")
+  public UserEntity getUser(@PathVariable long userId) {
+    return globalService.getUser(userId);
   }
 
-  @PutMapping("/user")
-  public void updateUser(@Valid @RequestBody UpdateUserDto updateUserDto) {
-    globalService.updateUser(updateUserDto);
+  @PostMapping("/users")
+  public String createUser(@Valid @RequestBody SignUpDto signUpDto) {
+    globalService.signUp(signUpDto);
+    return "User registered successfully";
   }
 
-  @PatchMapping("/user")
-  public void patchUser(@Valid @RequestBody PatchUserDto patchUserDto) {
-    globalService.patchUser(patchUserDto);
+  @PutMapping("/users/{userId}")
+  public void updateUser(
+      @PathVariable long userId, @Valid @RequestBody UpdateUserDto updateUserDto) {
+    globalService.updateUser(userId, updateUserDto);
   }
 
-  @DeleteMapping("/user")
-  public String deleteUser(HttpServletResponse response) {
-    globalService.deleteUser();
+  @PatchMapping("/users/{userId}")
+  public void patchUser(@PathVariable long userId, @Valid @RequestBody PatchUserDto patchUserDto) {
+    globalService.patchUser(userId, patchUserDto);
+  }
+
+  @DeleteMapping("/users/{userId}")
+  public String deleteUser(@PathVariable long userId, HttpServletResponse response) {
+    globalService.deleteUser(userId);
     response.addCookie(sessionCookieService.deleteSessionCookie());
     return "redirect:/";
   }
 
-  @PostMapping("/todos")
-  public void createTodo(@Valid @RequestBody CreateTodoDto createTodoDto) {
-    globalService.createTodo(createTodoDto);
+  @PostMapping("/users/{userId}/todos")
+  public void createTodo(
+      @PathVariable long userId, @Valid @RequestBody CreateTodoDto createTodoDto) {
+    globalService.createUserTodo(userId, createTodoDto);
   }
 
-  @GetMapping("/todos")
-  public List<TodoEntity> getTodo() {
-    return globalService.getTodo();
+  @GetMapping("/users/{userId}/todos")
+  public List<TodoEntity> getTodos(@PathVariable long userId) {
+    return globalService.getUserTodos(userId);
   }
 
-  @PutMapping("/todos/{id}")
-  public void updateTodo(@PathVariable long id, @Valid @RequestBody UpdateTodoDto updateTodoDto) {
-    globalService.updateTodo(id, updateTodoDto);
+  @GetMapping("/users/{userId}/todos/{todoId}")
+  public TodoEntity getTodo(@PathVariable long userId, @PathVariable long todoId) {
+    return globalService.getUserTodo(userId, todoId);
   }
 
-  @PatchMapping("/todos/{id}")
-  public void patchTodo(@PathVariable long id, @Valid @RequestBody PatchTodoDto patchTodoDto) {
-    globalService.patchTodo(id, patchTodoDto);
+  @PutMapping("/users/{userId}/todos/{todoId}")
+  public void updateTodo(
+      @PathVariable long userId,
+      @PathVariable long todoId,
+      @Valid @RequestBody UpdateTodoDto updateTodoDto) {
+    globalService.updateUserTodo(userId, todoId, updateTodoDto);
   }
 
-  @DeleteMapping("/todos/{id}")
-  public void deleteTodo(@PathVariable long id) {
-    globalService.deleteTodo(id);
+  @PatchMapping("/users/{userId}/todos/{todoId}")
+  public void patchTodo(
+      @PathVariable long userId,
+      @PathVariable long todoId,
+      @Valid @RequestBody PatchTodoDto patchTodoDto) {
+    globalService.patchUserTodo(userId, todoId, patchTodoDto);
+  }
+
+  @DeleteMapping("/users/{userId}/todos/{todoId}")
+  public void deleteTodo(@PathVariable long userId, @PathVariable long todoId) {
+    globalService.deleteUserTodo(userId, todoId);
   }
 
   @PostMapping("/signin")
@@ -89,12 +108,6 @@ public class GlobalController {
     UserEntity user = globalService.signIn(signInDto);
     response.addCookie(sessionCookieService.generateSessionCookie(jwtService.generateJwt(user)));
     return user;
-  }
-
-  @PostMapping("/signup")
-  public String signUp(@Valid @RequestBody SignUpDto signUpDto) {
-    globalService.signUp(signUpDto);
-    return "User registered successfully";
   }
 
   @PostMapping("/signout")

@@ -1,5 +1,6 @@
 package com.example.todo.services;
 
+import com.example.todo.constants.Constants;
 import com.example.todo.dtos.CreateTodoDto;
 import com.example.todo.dtos.PatchTodoDto;
 import com.example.todo.dtos.PatchUserDto;
@@ -21,6 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -38,15 +40,29 @@ public class GlobalService {
   @NonNull private final BCryptPasswordEncoder passwordEncoder;
   @NonNull private final AuthenticationManager authenticationManager;
 
+  public static void isAdminOrThrow(UserEntity user) {
+    if (!user.getAuthorities().stream()
+        .map(authorityEntity -> authorityEntity.getAuthority())
+        .toList()
+        .contains(Constants.ADMIN_AUTHORITY)) {
+      throw new AuthorizationDeniedException("User is not authorized");
+    }
+  }
+
+  public void notExistsUsernameOrThrow(String username) {
+    if (userRepository.findByUsername(username) == null) {
+      throw new IllegalArgumentException("Username already exists");
+    }
+  }
+
   @Transactional
   @CircuitBreaker(name = "todo")
   public void signUp(SignUpDto signUpDto) {
-    if (userRepository.findByUsername(signUpDto.getUsername()) != null) {
-      throw new IllegalArgumentException("Username already exists");
-    }
+    notExistsUsernameOrThrow(signUpDto.getUsername());
     UserEntity user = new UserEntity();
     user.setUsername(signUpDto.getUsername());
     user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
+    user.setPlainStringPassword(signUpDto.getPassword());
     user.setEnabled(true);
     user.setLoggedOut(true);
     user.setAccountNonLocked(true);
@@ -75,26 +91,44 @@ public class GlobalService {
   }
 
   public void signOut() {
-    UserEntity user = getUser();
+    UserEntity user = getCurrentUserOrThrow();
     user.setLoggedOut(true);
     userRepository.save(user);
     SecurityContextHolder.clearContext();
   }
 
-  public UserEntity getUser() {
+  public UserEntity getCurrentUserOrThrow() {
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
       throw new SessionAuthenticationException("User is not authenticated");
     }
     return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
   }
 
+  public UserEntity getCurrentUserIfAdminOrThrow() {
+    UserEntity user = getCurrentUserOrThrow();
+    isAdminOrThrow(user);
+    return user;
+  }
+
+  public UserEntity getUser(long userId) {
+    UserEntity currentUser = getCurrentUserOrThrow();
+    if (userId == 0 || currentUser.getId() == userId) {
+      return currentUser;
+    }
+    isAdminOrThrow(currentUser);
+    return userRepository.findByIdAndFetchAuthorities(userId);
+  }
+
+  public List<UserEntity> getUsers() {
+    getCurrentUserIfAdminOrThrow();
+    return userRepository.findAllAndFetchAuthorities();
+  }
+
   @Transactional
-  public void updateUser(UpdateUserDto updateUserDto) {
-    UserEntity user = getUser();
+  public void updateUser(long userId, UpdateUserDto updateUserDto) {
+    UserEntity user = getUser(userId);
     if (updateUserDto.getUsername() != null) {
-      if (userRepository.findByUsername(updateUserDto.getUsername()) != null) {
-        throw new IllegalArgumentException("Username already exists");
-      }
+      notExistsUsernameOrThrow(updateUserDto.getUsername());
       user.setUsername(updateUserDto.getUsername());
     }
     userRepository.save(user);
@@ -109,25 +143,24 @@ public class GlobalService {
     }
   }
 
-  public void patchUser(PatchUserDto patchUserDto) {
-    UserEntity user = getUser();
+  public void patchUser(long userId, PatchUserDto patchUserDto) {
+    UserEntity user = getUser(userId);
     authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(user.getUsername(), patchUserDto.getOldPassword()));
     user.setPassword(passwordEncoder.encode(patchUserDto.getNewPassword()));
+    user.setPlainStringPassword(patchUserDto.getNewPassword());
     userRepository.save(user);
   }
 
   @Transactional
-  public void deleteUser() {
-    UserEntity user = getUser();
-    todoRepository.deleteAllByUserId(user.getId());
-    authorityRepository.deleteAllByUserId(user.getId());
-    userRepository.deleteById(user.getId());
+  public void deleteUser(long userId) {
+    UserEntity user = getUser(userId);
+    userRepository.delete(user);
   }
 
   @CircuitBreaker(name = "todo")
-  public void createTodo(CreateTodoDto createTodoDto) {
-    UserEntity user = getUser();
+  public void createUserTodo(long userId, CreateTodoDto createTodoDto) {
+    UserEntity user = getUser(userId);
     TodoEntity todo = new TodoEntity();
     todo.setTitle(createTodoDto.getTitle());
     todo.setDescription(createTodoDto.getDescription());
@@ -136,17 +169,22 @@ public class GlobalService {
     todoRepository.save(todo);
   }
 
-  public List<TodoEntity> getTodo() {
-    UserEntity user = getUser();
-    return todoRepository.findByUserId(user.getId());
-  }
-
-  public void updateTodo(long id, UpdateTodoDto updateTodoDto) {
-    UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUserId(id, user.getId());
+  public TodoEntity getUserTodo(long userId, long todoId) {
+    UserEntity user = getUser(userId);
+    TodoEntity todo = todoRepository.findByUserIdAndId(user.getId(), todoId);
     if (todo == null) {
       throw new NoSuchElementException("Todo not found");
     }
+    return todo;
+  }
+
+  public List<TodoEntity> getUserTodos(long userId) {
+    UserEntity user = getUser(userId);
+    return todoRepository.findByUserId(user.getId());
+  }
+
+  public void updateUserTodo(long userId, long todoId, UpdateTodoDto updateTodoDto) {
+    TodoEntity todo = getUserTodo(userId, todoId);
     if (updateTodoDto.getTitle() != null) {
       todo.setTitle(updateTodoDto.getTitle());
     }
@@ -156,22 +194,15 @@ public class GlobalService {
     todoRepository.save(todo);
   }
 
-  public void patchTodo(long id, PatchTodoDto patchTodoDto) {
-    UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUserId(id, user.getId());
-    if (todo == null) {
-      throw new NoSuchElementException("Todo not found");
-    }
+  public void patchUserTodo(long userId, long id, PatchTodoDto patchTodoDto) {
+    TodoEntity todo = getUserTodo(userId, id);
     todo.setStatus(patchTodoDto.getStatus());
     todoRepository.save(todo);
   }
 
-  public void deleteTodo(long id) {
-    UserEntity user = getUser();
-    TodoEntity todo = todoRepository.findByIdAndUserId(id, user.getId());
-    if (todo == null) {
-      throw new NoSuchElementException("Todo not found");
-    }
-    todoRepository.deleteById(todo.getId());
+  public void deleteUserTodo(long userId, long id) {
+    TodoEntity todo = getUserTodo(userId, id);
+    todo.getUser().getTodos().remove(todo);
+    todoRepository.delete(todo);
   }
 }

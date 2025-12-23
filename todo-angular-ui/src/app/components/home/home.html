@@ -1,6 +1,46 @@
 <div class="user-signing-container">
-	<mat-tab-group>
-		<mat-tab label="Sign Up" />
-		<mat-tab label="Sign In" />
-	</mat-tab-group>
+	@if (user === null) {
+		<mat-card class="example-card" appearance="outlined">
+			<mat-card-content>
+				<mat-tab-group>
+					<mat-tab label="Signin">
+						<div class="tab-padding">
+							<form>
+								<div>
+									<mat-form-field>
+										<mat-label>Enter your Username</mat-label>
+										<input matInput placeholder="Username" required />
+									</mat-form-field>
+								</div>
+								<div>
+									<mat-form-field>
+										<mat-label>Enter your Password</mat-label>
+										<input matInput placeholder="Password" type="password" required />
+									</mat-form-field>
+								</div>
+							</form>
+						</div>
+					</mat-tab>
+					<mat-tab label="Signup">
+						<div class="tab-padding">
+							<form>
+								<div>
+									<mat-form-field>
+										<mat-label>Enter your Username</mat-label>
+										<input matInput placeholder="Username" required />
+									</mat-form-field>
+								</div>
+								<div>
+									<mat-form-field>
+										<mat-label>Enter your Password</mat-label>
+										<input matInput placeholder="Password" type="password" required />
+									</mat-form-field>
+								</div>
+							</form>
+						</div>
+					</mat-tab>
+				</mat-tab-group>
+			</mat-card-content>
+		</mat-card>
+	}
 </div>

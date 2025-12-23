@@ -4,3 +4,7 @@
 	left: 50vw;
 	transform: translate(-50%, -50%);
 }
+
+.tab-padding {
+	padding: 10px;
+}
