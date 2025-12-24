@@ -57,7 +57,7 @@ public class GlobalService {
 
   @Transactional
   @CircuitBreaker(name = "todo")
-  public void signUp(SignUpDto signUpDto) {
+  public void createUser(SignUpDto signUpDto) {
     notExistsUsernameOrThrow(signUpDto.getUsername());
     UserEntity user = new UserEntity();
     user.setUsername(signUpDto.getUsername());
@@ -194,14 +194,14 @@ public class GlobalService {
     todoRepository.save(todo);
   }
 
-  public void patchUserTodo(long userId, long id, PatchTodoDto patchTodoDto) {
-    TodoEntity todo = getUserTodo(userId, id);
+  public void patchUserTodo(long userId, long todoId, PatchTodoDto patchTodoDto) {
+    TodoEntity todo = getUserTodo(userId, todoId);
     todo.setStatus(patchTodoDto.getStatus());
     todoRepository.save(todo);
   }
 
-  public void deleteUserTodo(long userId, long id) {
-    TodoEntity todo = getUserTodo(userId, id);
+  public void deleteUserTodo(long userId, long todoId) {
+    TodoEntity todo = getUserTodo(userId, todoId);
     todo.getUser().getTodos().remove(todo);
     todoRepository.delete(todo);
   }

@@ -42,9 +42,14 @@ public class GlobalController {
     return globalService.getUser(userId);
   }
 
+  @GetMapping("/users")
+  public List<UserEntity> getUsers() {
+    return globalService.getUsers();
+  }
+
   @PostMapping("/users")
   public String createUser(@Valid @RequestBody SignUpDto signUpDto) {
-    globalService.signUp(signUpDto);
+    globalService.createUser(signUpDto);
     return "User registered successfully";
   }
 
@@ -66,12 +71,6 @@ public class GlobalController {
     return "redirect:/";
   }
 
-  @PostMapping("/users/{userId}/todos")
-  public void createTodo(
-      @PathVariable long userId, @Valid @RequestBody CreateTodoDto createTodoDto) {
-    globalService.createUserTodo(userId, createTodoDto);
-  }
-
   @GetMapping("/users/{userId}/todos")
   public List<TodoEntity> getTodos(@PathVariable long userId) {
     return globalService.getUserTodos(userId);
@@ -80,6 +79,12 @@ public class GlobalController {
   @GetMapping("/users/{userId}/todos/{todoId}")
   public TodoEntity getTodo(@PathVariable long userId, @PathVariable long todoId) {
     return globalService.getUserTodo(userId, todoId);
+  }
+
+  @PostMapping("/users/{userId}/todos")
+  public void createTodo(
+      @PathVariable long userId, @Valid @RequestBody CreateTodoDto createTodoDto) {
+    globalService.createUserTodo(userId, createTodoDto);
   }
 
   @PutMapping("/users/{userId}/todos/{todoId}")
