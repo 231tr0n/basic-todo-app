@@ -108,7 +108,7 @@ public class GlobalController {
     globalService.deleteUserTodo(userId, todoId);
   }
 
-  @DeleteMapping("/users/{userId}")
+  @DeleteMapping("/users/{userId}/todos")
   public void deleteTodos(@PathVariable long userId) {
     globalService.deleteUserTodos(userId);
   }
