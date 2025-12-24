@@ -205,4 +205,9 @@ public class GlobalService {
     todo.getUser().getTodos().remove(todo);
     todoRepository.delete(todo);
   }
+
+  public void deleteUserTodos(long userId) {
+    UserEntity user = getUser(userId);
+    todoRepository.deleteAllByUserId(user.getId());
+  }
 }

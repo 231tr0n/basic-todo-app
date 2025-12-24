@@ -108,6 +108,11 @@ public class GlobalController {
     globalService.deleteUserTodo(userId, todoId);
   }
 
+  @DeleteMapping("/users/{userId}")
+  public void deleteTodos(@PathVariable long userId) {
+    globalService.deleteUserTodos(userId);
+  }
+
   @PostMapping("/signin")
   public UserEntity signIn(@Valid @RequestBody SignInDto signInDto, HttpServletResponse response) {
     UserEntity user = globalService.signIn(signInDto);
