@@ -15,7 +15,6 @@ public class SignUpDto {
   @Size(min = 1, max = 255)
   private String password;
 
-  @NotNull
   @Size(min = 1, max = 10)
   private Set<String> authorities;
 }

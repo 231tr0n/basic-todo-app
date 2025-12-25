@@ -16,7 +16,7 @@ export interface CreateTodoDto {
 export interface SignUpDto {
 	username: string;
 	password: string;
-	authorities: string[];
+	authorities?: string[];
 }
 
 export interface SignInDto {

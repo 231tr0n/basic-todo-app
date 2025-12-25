@@ -1,17 +1,27 @@
-<form>
+<form [formGroup]="signUpForm">
 	<div>
 		<mat-form-field>
 			<mat-label>Enter your Username</mat-label>
-			<input matInput placeholder="Username" required />
+			<input matInput formControlName="username" />
 		</mat-form-field>
 	</div>
 	<div>
 		<mat-form-field>
 			<mat-label>Enter your Password</mat-label>
-			<input matInput placeholder="Password" type="password" required />
+			<input matInput type="password" formControlName="password" />
 		</mat-form-field>
 	</div>
 	<div>
-		<button matFab extended type="submit"><mat-icon>account_circle</mat-icon>Sign Up</button>
+		<mat-form-field>
+			<mat-label>Authorities</mat-label>
+			<mat-select formControlName="authorities" multiple>
+				<mat-option>ADMIN</mat-option>
+			</mat-select>
+		</mat-form-field>
+	</div>
+	<div>
+		<button matFab extended type="submit" [disabled]="!signUpForm.valid">
+			<mat-icon>account_circle</mat-icon>Sign Up
+		</button>
 	</div>
 </form>

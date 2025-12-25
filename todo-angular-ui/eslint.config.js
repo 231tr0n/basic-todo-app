@@ -33,6 +33,12 @@ export default defineConfig([
 		},
 		processor: angular.processInlineTemplates,
 		rules: {
+			'@typescript-eslint/unbound-method': [
+				'error',
+				{
+					ignoreStatic: true
+				}
+			],
 			'@angular-eslint/directive-selector': [
 				'error',
 				{

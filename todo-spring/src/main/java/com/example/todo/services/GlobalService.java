@@ -18,6 +18,7 @@ import com.example.todo.repositories.UserRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -70,11 +71,14 @@ public class GlobalService {
     user.setCredentialsNonExpired(true);
     userRepository.save(user);
     user = userRepository.findByUsername(signUpDto.getUsername());
-    for (String authority : signUpDto.getAuthorities()) {
-      AuthorityEntity authorityEntity = new AuthorityEntity();
-      authorityEntity.setAuthority(authority);
-      authorityEntity.setUser(user);
-      authorityRepository.save(authorityEntity);
+    Set<String> authorities = signUpDto.getAuthorities();
+    if (authorities != null) {
+      for (String authority : authorities) {
+        AuthorityEntity authorityEntity = new AuthorityEntity();
+        authorityEntity.setAuthority(authority);
+        authorityEntity.setUser(user);
+        authorityRepository.save(authorityEntity);
+      }
     }
   }
 
