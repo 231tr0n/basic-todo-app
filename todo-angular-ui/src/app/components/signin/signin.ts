@@ -15,7 +15,7 @@ import { SignInDto } from '../../types/types';
 	changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Signin {
-	private readonly globalApi = inject(GlobalApi);
+	public readonly globalApi = inject(GlobalApi);
 
 	readonly signInForm = new FormGroup({
 		username: new FormControl('', [Validators.required]),
@@ -25,7 +25,8 @@ export class Signin {
 	onSubmit() {
 		if (this.signInForm.valid) {
 			const signInDto = this.signInForm.value as SignInDto;
-			this.globalApi.signIn(signInDto);
+			console.log(signInDto);
+			// this.globalApi.signIn(signInDto);
 		}
 	}
 }

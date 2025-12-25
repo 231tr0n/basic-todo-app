@@ -1,4 +1,4 @@
-<form [formGroup]="signUpForm">
+<form [formGroup]="signUpForm" (ngSubmit)="onSubmit()">
 	<div>
 		<mat-form-field>
 			<mat-label>Enter your Username</mat-label>
@@ -15,7 +15,7 @@
 		<mat-form-field>
 			<mat-label>Authorities</mat-label>
 			<mat-select formControlName="authorities" multiple>
-				<mat-option>ADMIN</mat-option>
+				<mat-option [value]="adminAuthority">ADMIN</mat-option>
 			</mat-select>
 		</mat-form-field>
 	</div>

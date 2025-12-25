@@ -12,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalControllerAdvice {
@@ -19,6 +20,11 @@ public class GlobalControllerAdvice {
   public ResponseEntity<String> handleException(Exception e) {
     e.printStackTrace();
     return ResponseEntity.badRequest().body("Error handling request");
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<String> handleNoResourceFoundException(NoResourceFoundException e) {
+    return ResponseEntity.notFound().build();
   }
 
   @ExceptionHandler({AuthenticationException.class, SessionAuthenticationException.class})

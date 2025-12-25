@@ -1,4 +1,4 @@
-<form [formGroup]="signInForm">
+<form [formGroup]="signInForm" (ngSubmit)="onSubmit()">
 	<div>
 		<mat-form-field>
 			<mat-label>Enter your Username</mat-label>
