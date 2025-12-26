@@ -8,3 +8,7 @@
 .tab-padding {
 	padding: 10px;
 }
+
+mat-card {
+	min-height: 400px;
+}

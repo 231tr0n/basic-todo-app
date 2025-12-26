@@ -2,6 +2,7 @@ package com.example.todo.configurations;
 
 import com.example.todo.components.JwtAuthenticationFilterComponent;
 import com.example.todo.constants.Constants;
+import com.example.todo.entities.UserEntity;
 import com.example.todo.repositories.UserRepository;
 import java.util.List;
 import lombok.NonNull;
@@ -15,6 +16,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -28,10 +30,6 @@ public class SecurityConfiguration {
 
   private final UserRepository userRepository;
 
-  private final String host;
-
-  private final long port;
-
   public SecurityConfiguration(
       JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent,
       UserRepository userRepository,
@@ -39,8 +37,6 @@ public class SecurityConfiguration {
       @Value("${server.port}") long port) {
     this.jwtAuthenticationFilterComponent = jwtAuthenticationFilterComponent;
     this.userRepository = userRepository;
-    this.host = host;
-    this.port = port;
   }
 
   @Bean
@@ -72,7 +68,6 @@ public class SecurityConfiguration {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of(String.format("http://%s:%d", host, port)));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
     configuration.setAllowCredentials(true);
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -84,7 +79,13 @@ public class SecurityConfiguration {
   public AuthenticationProvider authenticationProvider() {
     DaoAuthenticationProvider authenticationProvider =
         new DaoAuthenticationProvider(
-            username -> userRepository.findByUsernameAndFetchAuthorities(username));
+            username -> {
+              UserEntity user = userRepository.findByUsernameAndFetchAuthorities(username);
+              if (user == null) {
+                throw new UsernameNotFoundException("User not found");
+              }
+              return user;
+            });
     authenticationProvider.setPasswordEncoder(passwordEncoder());
     return authenticationProvider;
   }

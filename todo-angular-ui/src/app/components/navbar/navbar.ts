@@ -5,6 +5,7 @@ import { MatToolbar } from '@angular/material/toolbar';
 import { UserDto } from '../../types/types';
 import { Session } from '../../services/session';
 import { Subscription } from 'rxjs';
+import { GlobalApi } from '../../services/global-api';
 
 @Component({
 	selector: 'app-navbar',
@@ -16,6 +17,7 @@ import { Subscription } from 'rxjs';
 export class Navbar implements OnInit, OnDestroy {
 	protected darkMode = false;
 	protected user: UserDto | null = null;
+	protected readonly globalApi = inject(GlobalApi);
 	private readonly session = inject(Session);
 	private sessionSubscription: Subscription | null = null;
 

@@ -37,9 +37,7 @@ export class Signup {
 
 	onSubmit() {
 		if (this.signUpForm.valid) {
-			const signUpDto = this.signUpForm.value as SignUpDto;
-			console.log(signUpDto);
-			// this.globalApi.signUp(signUpDto);
+			this.globalApi.signUp(this.signUpForm.value as SignUpDto);
 		}
 	}
 }
