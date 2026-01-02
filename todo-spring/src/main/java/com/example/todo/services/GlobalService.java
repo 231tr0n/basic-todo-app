@@ -2,10 +2,10 @@ package com.example.todo.services;
 
 import com.example.todo.constants.Constants;
 import com.example.todo.dtos.CreateTodoDto;
+import com.example.todo.dtos.CreateUserDto;
 import com.example.todo.dtos.PatchTodoDto;
 import com.example.todo.dtos.PatchUserDto;
 import com.example.todo.dtos.SignInDto;
-import com.example.todo.dtos.SignUpDto;
 import com.example.todo.dtos.UpdateTodoDto;
 import com.example.todo.dtos.UpdateUserDto;
 import com.example.todo.entities.AuthorityEntity;
@@ -50,14 +50,14 @@ public class GlobalService {
   }
 
   public void notExistsUsernameOrThrow(String username) {
-    if (userRepository.findByUsername(username) == null) {
+    if (userRepository.findByUsername(username) != null) {
       throw new IllegalArgumentException("Username already exists");
     }
   }
 
   @Transactional
   @CircuitBreaker(name = "todo")
-  public void createUser(SignUpDto signUpDto) {
+  public void createUser(CreateUserDto signUpDto) {
     notExistsUsernameOrThrow(signUpDto.getUsername());
     UserEntity user = new UserEntity();
     user.setUsername(signUpDto.getUsername());

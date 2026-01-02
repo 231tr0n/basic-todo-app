@@ -6,7 +6,7 @@ import java.util.Set;
 import lombok.Data;
 
 @Data
-public class SignUpDto {
+public class CreateUserDto {
   @NotNull
   @Size(min = 1, max = 255)
   private String username;

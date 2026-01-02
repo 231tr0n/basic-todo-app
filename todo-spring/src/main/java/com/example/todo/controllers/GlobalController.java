@@ -1,10 +1,10 @@
 package com.example.todo.controllers;
 
 import com.example.todo.dtos.CreateTodoDto;
+import com.example.todo.dtos.CreateUserDto;
 import com.example.todo.dtos.PatchTodoDto;
 import com.example.todo.dtos.PatchUserDto;
 import com.example.todo.dtos.SignInDto;
-import com.example.todo.dtos.SignUpDto;
 import com.example.todo.dtos.UpdateTodoDto;
 import com.example.todo.dtos.UpdateUserDto;
 import com.example.todo.entities.TodoEntity;
@@ -48,7 +48,7 @@ public class GlobalController {
   }
 
   @PostMapping("/users")
-  public String createUser(@Valid @RequestBody SignUpDto signUpDto) {
+  public String createUser(@Valid @RequestBody CreateUserDto signUpDto) {
     globalService.createUser(signUpDto);
     return "User registered successfully";
   }
