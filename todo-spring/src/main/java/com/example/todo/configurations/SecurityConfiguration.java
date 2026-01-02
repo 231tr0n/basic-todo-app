@@ -48,6 +48,7 @@ public class SecurityConfiguration {
         .logout(logout -> logout.disable())
         .redirectToHttps(redirect -> redirect.disable())
         .authenticationProvider(authenticationProvider())
+        .anonymous(anonymous -> anonymous.disable())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(
