@@ -24,7 +24,14 @@ export class Signin {
 
 	onSubmit() {
 		if (this.signInForm.valid) {
-			this.globalApi.signIn(this.signInForm.value as SignInDto).subscribe();
+			this.globalApi.signIn(this.signInForm.value as SignInDto).subscribe({
+				next: (response) => {
+					console.log('Sign-in successful:', response);
+				},
+				error: (error) => {
+					console.error('Sign-in failed:', error);
+				}
+			});
 		}
 	}
 }
