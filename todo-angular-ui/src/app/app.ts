@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/cor
 import { RouterOutlet } from '@angular/router';
 import { Navbar } from './components/navbar/navbar';
 import { Session } from './services/session';
+import { GlobalApi } from './services/global-api';
 
 @Component({
 	selector: 'app-root',
@@ -12,13 +13,15 @@ import { Session } from './services/session';
 })
 export class App implements OnInit {
 	private readonly session = inject(Session);
+	private readonly globalApi = inject(GlobalApi);
 
 	ngOnInit() {
-		this.session.loggedInUser.subscribe((value) => {
-			if (value) {
-				console.log('User logged in: ', value);
-			} else {
-				console.log('User logged out or session has expired.');
+		this.globalApi.getUser().subscribe({
+			next: (user) => {
+				this.session.loggedInUser.next(user);
+			},
+			error: () => {
+				this.session.loggedInUser.next(null);
 			}
 		});
 	}

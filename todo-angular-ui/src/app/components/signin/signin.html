@@ -16,4 +16,7 @@
 			<mat-icon>login</mat-icon>Sign In
 		</button>
 	</div>
+	@if (loginFailed) {
+		<p><mat-error>Incorrect username or password</mat-error></p>
+	}
 </form>

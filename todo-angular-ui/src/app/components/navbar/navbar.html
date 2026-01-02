@@ -12,7 +12,11 @@
 			<button type="button" class="button-margin" matMiniFab>
 				<mat-icon>account_circle</mat-icon>
 			</button>
-			<button type="button" class="button-margin" matMiniFab (click)="globalApi.signOut()">
+			<button
+				type="button"
+				class="button-margin"
+				matMiniFab
+				(click)="globalApi.signOut().subscribe()">
 				<mat-icon>logout</mat-icon>
 			</button>
 		}

@@ -65,10 +65,9 @@ public class GlobalController {
   }
 
   @DeleteMapping("/users/{userId}")
-  public String deleteUser(@PathVariable long userId, HttpServletResponse response) {
+  public void deleteUser(@PathVariable long userId, HttpServletResponse response) {
     globalService.deleteUser(userId);
     response.addCookie(sessionCookieService.deleteSessionCookie());
-    return "redirect:/";
   }
 
   @GetMapping("/users/{userId}/todos")
@@ -121,9 +120,8 @@ public class GlobalController {
   }
 
   @PostMapping("/signout")
-  public String signOut(HttpServletResponse response) {
+  public void signOut(HttpServletResponse response) {
     globalService.signOut();
     response.addCookie(sessionCookieService.deleteSessionCookie());
-    return "redirect:/";
   }
 }

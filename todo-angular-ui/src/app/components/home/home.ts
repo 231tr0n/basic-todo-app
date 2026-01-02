@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	ChangeDetectorRef,
+	Component,
+	inject,
+	OnDestroy,
+	OnInit
+} from '@angular/core';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { UserDto } from '../../types/types';
@@ -17,11 +24,13 @@ import { Signin } from '../signin/signin';
 export class Home implements OnInit, OnDestroy {
 	protected user: UserDto | null = null;
 	private readonly session = inject(Session);
+	private readonly changeDetector = inject(ChangeDetectorRef);
 	private sessionSubscription: Subscription | null = null;
 
 	ngOnInit() {
 		this.sessionSubscription = this.session.loggedInUser.subscribe((user) => {
 			this.user = user;
+			this.changeDetector.markForCheck();
 		});
 	}
 

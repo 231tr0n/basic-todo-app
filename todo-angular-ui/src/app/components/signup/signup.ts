@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFabButton } from '@angular/material/button';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
@@ -18,7 +18,8 @@ import { SignUpDto } from '../../types/types';
 		MatIcon,
 		ReactiveFormsModule,
 		MatSelect,
-		MatOption
+		MatOption,
+		MatError
 	],
 	templateUrl: './signup.html',
 	styleUrl: './signup.css',
@@ -26,7 +27,7 @@ import { SignUpDto } from '../../types/types';
 })
 export class Signup {
 	protected readonly adminAuthority = 'ADMIN';
-
+	protected signUpFailed = false;
 	public readonly globalApi = inject(GlobalApi);
 
 	readonly signUpForm = new FormGroup({
@@ -37,7 +38,14 @@ export class Signup {
 
 	onSubmit() {
 		if (this.signUpForm.valid) {
-			this.globalApi.signUp(this.signUpForm.value as SignUpDto);
+			this.globalApi.signUp(this.signUpForm.value as SignUpDto).subscribe({
+				next: () => {
+					this.signUpFailed = false;
+				},
+				error: () => {
+					this.signUpFailed = true;
+				}
+			});
 		}
 	}
 }

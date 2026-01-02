@@ -24,4 +24,9 @@
 			<mat-icon>account_circle</mat-icon>Sign Up
 		</button>
 	</div>
+	@if (signUpFailed) {
+		<div>
+			<mat-error>Sign up failed</mat-error>
+		</div>
+	}
 </form>
