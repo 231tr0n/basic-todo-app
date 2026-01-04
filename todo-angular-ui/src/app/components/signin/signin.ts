@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { ReactiveFormsModule, Validators, FormGroup, FormControl } from '@angular/forms';
 import { MatFabButton } from '@angular/material/button';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
@@ -16,6 +16,7 @@ import { SignInDto } from '../../types/types';
 })
 export class Signin {
 	private readonly globalApi = inject(GlobalApi);
+	private readonly changeDetector = inject(ChangeDetectorRef);
 	protected loginFailed = false;
 
 	readonly signInForm = new FormGroup({
@@ -28,9 +29,11 @@ export class Signin {
 			this.globalApi.signIn(this.signInForm.value as SignInDto).subscribe({
 				next: () => {
 					this.loginFailed = false;
+					this.changeDetector.markForCheck();
 				},
 				error: () => {
 					this.loginFailed = true;
+					this.changeDetector.markForCheck();
 				}
 			});
 		}
