@@ -13,10 +13,12 @@ import { Session } from '../../services/session';
 import { Subscription } from 'rxjs';
 import { Signup } from '../signup/signup';
 import { Signin } from '../signin/signin';
+import { UserSettings } from '../user-settings/user-settings';
+import { TodoGrid } from '../todo-grid/todo-grid';
 
 @Component({
 	selector: 'app-home',
-	imports: [MatTab, MatTabGroup, MatCard, MatCardContent, Signup, Signin],
+	imports: [MatTab, MatTabGroup, MatCard, MatCardContent, Signup, Signin, UserSettings, TodoGrid],
 	templateUrl: './home.html',
 	styleUrl: './home.css',
 	changeDetection: ChangeDetectionStrategy.OnPush

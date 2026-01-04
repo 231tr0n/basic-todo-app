@@ -1,7 +1,7 @@
 <div class="user-signing-container">
-	@if (user === null) {
-		<mat-card class="example-card" appearance="outlined">
-			<mat-card-content>
+	<mat-card class="example-card" appearance="outlined">
+		<mat-card-content>
+			@if (user === null) {
 				<mat-tab-group>
 					<mat-tab label="Sign In">
 						<div class="tab-padding">
@@ -14,7 +14,20 @@
 						</div>
 					</mat-tab>
 				</mat-tab-group>
-			</mat-card-content>
-		</mat-card>
-	}
+			} @else {
+				<mat-tab-group>
+					<mat-tab label="User Settings">
+						<div class="tab-padding">
+							<app-user-settings [user]="user" />
+						</div>
+					</mat-tab>
+					<mat-tab label="Todo Grid">
+						<div class="tab-padding">
+							<app-todo-grid [user]="user" />
+						</div>
+					</mat-tab>
+				</mat-tab-group>
+			}
+		</mat-card-content>
+	</mat-card>
 </div>

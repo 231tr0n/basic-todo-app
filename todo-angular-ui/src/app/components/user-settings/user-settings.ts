@@ -2,12 +2,12 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { UserDto } from '../../types/types';
 
 @Component({
-	selector: 'app-todo-grid',
+	selector: 'app-user-settings',
 	imports: [],
-	templateUrl: './todo-grid.html',
-	styleUrl: './todo-grid.css',
+	templateUrl: './user-settings.html',
+	styleUrl: './user-settings.css',
 	changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TodoGrid {
+export class UserSettings {
 	readonly user = input<UserDto | null>();
 }
