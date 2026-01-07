@@ -128,7 +128,7 @@ public class GlobalService {
 
   @Transactional
   public void updateUser(long userId, @Valid UpdateUserDto updateUserDto) {
-    if (updateUserDto.getUsername() == null || updateUserDto.getAuthorities() == null) {
+    if (updateUserDto.getUsername() == null && updateUserDto.getAuthorities() == null) {
       throw new IllegalArgumentException(
           "One of username or authorities must be provided for updateUser operation");
     }
