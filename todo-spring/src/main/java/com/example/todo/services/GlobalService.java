@@ -139,22 +139,25 @@ public class GlobalService {
       user.setUsername(updateUserDto.getUsername());
       userRepository.save(user);
     }
-    if (updateUserDto.getAuthorities() == null
-        || updateUserDto
+    if (updateUserDto.getAuthorities() != null
+        && !updateUserDto
             .getAuthorities()
             .equals(
                 user.getAuthorities().stream()
                     .map(AuthorityEntity::getAuthority)
                     .collect(Collectors.toSet()))) {
-      return;
+      authorityRepository.deleteAllByUserId(user.getId());
+      for (String authority : updateUserDto.getAuthorities()) {
+        AuthorityEntity authorityEntity = new AuthorityEntity();
+        authorityEntity.setAuthority(authority);
+        authorityEntity.setUser(user);
+        authorityRepository.save(authorityEntity);
+      }
     }
-    authorityRepository.deleteAllByUserId(user.getId());
-    for (String authority : updateUserDto.getAuthorities()) {
-      AuthorityEntity authorityEntity = new AuthorityEntity();
-      authorityEntity.setAuthority(authority);
-      authorityEntity.setUser(user);
-      authorityRepository.save(authorityEntity);
-    }
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                user, user.getPassword(), user.getAuthorities()));
   }
 
   public void patchUser(long userId, @Valid PatchUserDto patchUserDto) {

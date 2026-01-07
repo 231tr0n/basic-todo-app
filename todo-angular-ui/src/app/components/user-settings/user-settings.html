@@ -1,1 +1,21 @@
-<p>user-settings works!</p>
+<form [formGroup]="updateUserForm" (ngSubmit)="onSubmit()">
+	<div>
+		<mat-form-field>
+			<mat-label>Enter your Username</mat-label>
+			<input matInput type="text" formControlName="username" />
+		</mat-form-field>
+	</div>
+	<div>
+		<mat-form-field>
+			<mat-label>Authorities</mat-label>
+			<mat-select formControlName="authorities" multiple>
+				<mat-option [value]="adminAuthority">ADMIN</mat-option>
+			</mat-select>
+		</mat-form-field>
+	</div>
+	<div>
+		<button matFab extended type="submit" [disabled]="!updateUserForm.valid">
+			<mat-icon>update</mat-icon>Update
+		</button>
+	</div>
+</form>

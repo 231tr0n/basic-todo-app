@@ -28,10 +28,10 @@ import { SignUpDto } from '../../types/types';
 export class Signup {
 	protected readonly adminAuthority = 'ADMIN';
 	protected signUpFailed = false;
-	public readonly changeDetector = inject(ChangeDetectorRef);
-	public readonly globalApi = inject(GlobalApi);
+	private readonly changeDetector = inject(ChangeDetectorRef);
+	private readonly globalApi = inject(GlobalApi);
 
-	readonly signUpForm = new FormGroup({
+	protected readonly signUpForm = new FormGroup({
 		username: new FormControl('', [Validators.required]),
 		password: new FormControl('', [Validators.required]),
 		authorities: new FormControl([])

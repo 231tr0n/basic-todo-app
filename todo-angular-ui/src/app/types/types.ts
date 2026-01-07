@@ -27,7 +27,12 @@ export interface SignInDto {
 export interface UserDto {
 	id: number;
 	username: string;
-	authorities: string[];
+	authorities: AuthorityDto[];
+}
+
+export interface AuthorityDto {
+	id: number;
+	authority: string;
 }
 
 export interface PatchUserDto {

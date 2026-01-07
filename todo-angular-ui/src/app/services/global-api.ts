@@ -38,7 +38,7 @@ export class GlobalApi {
 
 	signOut() {
 		return this.http
-			.post<string>(
+			.post(
 				`${BASE_URL}/signout`,
 				{},
 				{
@@ -81,9 +81,15 @@ export class GlobalApi {
 
 	updateUser(dto: UpdateUserDto, userId?: number) {
 		userId = userId ?? CURRENT_USER_ID;
-		return this.http.put(`${BASE_URL}/users/${userId.toString()}`, dto, {
-			withCredentials: true
-		});
+		return this.http
+			.put(`${BASE_URL}/users/${userId.toString()}`, dto, {
+				withCredentials: true
+			})
+			.pipe(
+				tap(() => {
+					this.getUser().subscribe();
+				})
+			);
 	}
 
 	getTodos(userId?: number) {

@@ -11,12 +11,12 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
   @Query("SELECT u FROM UserEntity u WHERE u.username = :username")
   UserEntity findByUsername(String username);
 
-  @Query("SELECT u FROM UserEntity u JOIN FETCH u.authorities WHERE u.username = :username")
+  @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.authorities WHERE u.username = :username")
   UserEntity findByUsernameAndFetchAuthorities(String username);
 
-  @Query("SELECT u FROM UserEntity u JOIN FETCH u.authorities WHERE u.id = :id")
+  @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.authorities WHERE u.id = :id")
   UserEntity findByIdAndFetchAuthorities(long id);
 
-  @Query("SELECT u FROM UserEntity u JOIN FETCH u.authorities")
+  @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.authorities")
   List<UserEntity> findAllAndFetchAuthorities();
 }

@@ -50,8 +50,14 @@ public class GlobalController {
   }
 
   @PutMapping("/users/{userId}")
-  public void updateUser(@PathVariable long userId, @RequestBody UpdateUserDto updateUserDto) {
+  public void updateUser(
+      @PathVariable long userId,
+      @RequestBody UpdateUserDto updateUserDto,
+      HttpServletResponse response) {
     globalService.updateUser(userId, updateUserDto);
+    response.addCookie(
+        sessionCookieService.generateSessionCookie(
+            jwtService.generateJwt(globalService.getUser(userId))));
   }
 
   @PatchMapping("/users/{userId}")
