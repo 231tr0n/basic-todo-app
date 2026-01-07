@@ -12,8 +12,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Data;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,26 +21,19 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Data
 public class UserEntity implements UserDetails {
   @Id
-  @NotNull
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false, unique = true)
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private long id;
 
-  @NotNull
-  @Size(min = 1, max = 255)
-  @Column(nullable = false, unique = true)
+  @Column(nullable = false, unique = true, length = 255)
   private String username;
 
-  @NotNull
-  @Size(min = 1, max = 255)
-  @Column(nullable = false)
+  @Column(nullable = false, length = 255)
   @JsonIgnore
   private String password;
 
-  @NotNull
-  @Size(min = 1, max = 255)
-  @Column(nullable = false)
+  @Column(nullable = false, length = 255)
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private String plainStringPassword;
 
@@ -64,12 +55,10 @@ public class UserEntity implements UserDetails {
   @JsonIgnore
   private List<TodoEntity> todos;
 
-  @NotNull
-  @Column(nullable = false)
   @JsonIgnore
+  @Column(nullable = false)
   private boolean enabled;
 
-  @NotNull
   @Column(nullable = false)
   @JsonIgnore
   private boolean loggedOut;

@@ -13,8 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.ToString;
 
@@ -23,31 +21,24 @@ import lombok.ToString;
 @Data
 public class TodoEntity {
   @Id
-  @NotNull
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false, unique = true)
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private long id;
 
-  @NotNull
-  @Size(min = 1, max = 255)
-  @Column(nullable = false)
+  @Column(nullable = false, length = 255)
   private String title;
 
-  @NotNull
-  @Size(min = 1, max = 255)
-  @Column(nullable = false)
+  @Column(nullable = false, length = 255)
   private String description;
 
-  @NotNull
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(nullable = false, length = 255)
   private StatusEnum status;
 
-  @NotNull
   @JsonBackReference
   @ManyToOne
-  @JoinColumn(name = "user_id", referencedColumnName = "id")
+  @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
   @JsonIgnore
   @ToString.Exclude
   private UserEntity user;

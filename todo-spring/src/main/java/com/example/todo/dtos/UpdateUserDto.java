@@ -9,6 +9,6 @@ public class UpdateUserDto {
   @Size(min = 1, max = 255)
   private String username;
 
-  @Size(min = 1, max = 10)
+  @Size(min = 0, max = 10)
   private Set<String> authorities;
 }

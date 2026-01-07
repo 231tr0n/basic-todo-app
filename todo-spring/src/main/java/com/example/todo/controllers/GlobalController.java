@@ -13,10 +13,8 @@ import com.example.todo.services.GlobalService;
 import com.example.todo.services.JwtService;
 import com.example.todo.services.SessionCookieService;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -31,11 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 @AllArgsConstructor
 public class GlobalController {
-  @NonNull private final GlobalService globalService;
-
-  @NonNull private final JwtService jwtService;
-
-  @NonNull private final SessionCookieService sessionCookieService;
+  private final GlobalService globalService;
+  private final JwtService jwtService;
+  private final SessionCookieService sessionCookieService;
 
   @GetMapping("/users/{userId}")
   public UserEntity getUser(@PathVariable long userId) {
@@ -48,19 +44,18 @@ public class GlobalController {
   }
 
   @PostMapping("/users")
-  public String createUser(@Valid @RequestBody CreateUserDto signUpDto) {
+  public String createUser(@RequestBody CreateUserDto signUpDto) {
     globalService.createUser(signUpDto);
     return "User registered successfully";
   }
 
   @PutMapping("/users/{userId}")
-  public void updateUser(
-      @PathVariable long userId, @Valid @RequestBody UpdateUserDto updateUserDto) {
+  public void updateUser(@PathVariable long userId, @RequestBody UpdateUserDto updateUserDto) {
     globalService.updateUser(userId, updateUserDto);
   }
 
   @PatchMapping("/users/{userId}")
-  public void patchUser(@PathVariable long userId, @Valid @RequestBody PatchUserDto patchUserDto) {
+  public void patchUser(@PathVariable long userId, @RequestBody PatchUserDto patchUserDto) {
     globalService.patchUser(userId, patchUserDto);
   }
 
@@ -81,8 +76,7 @@ public class GlobalController {
   }
 
   @PostMapping("/users/{userId}/todos")
-  public void createTodo(
-      @PathVariable long userId, @Valid @RequestBody CreateTodoDto createTodoDto) {
+  public void createTodo(@PathVariable long userId, @RequestBody CreateTodoDto createTodoDto) {
     globalService.createUserTodo(userId, createTodoDto);
   }
 
@@ -90,7 +84,7 @@ public class GlobalController {
   public void updateTodo(
       @PathVariable long userId,
       @PathVariable long todoId,
-      @Valid @RequestBody UpdateTodoDto updateTodoDto) {
+      @RequestBody UpdateTodoDto updateTodoDto) {
     globalService.updateUserTodo(userId, todoId, updateTodoDto);
   }
 
@@ -98,7 +92,7 @@ public class GlobalController {
   public void patchTodo(
       @PathVariable long userId,
       @PathVariable long todoId,
-      @Valid @RequestBody PatchTodoDto patchTodoDto) {
+      @RequestBody PatchTodoDto patchTodoDto) {
     globalService.patchUserTodo(userId, todoId, patchTodoDto);
   }
 
@@ -113,7 +107,7 @@ public class GlobalController {
   }
 
   @PostMapping("/signin")
-  public UserEntity signIn(@Valid @RequestBody SignInDto signInDto, HttpServletResponse response) {
+  public UserEntity signIn(@RequestBody SignInDto signInDto, HttpServletResponse response) {
     UserEntity user = globalService.signIn(signInDto);
     response.addCookie(sessionCookieService.generateSessionCookie(jwtService.generateJwt(user)));
     return user;

@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -20,11 +19,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @AllArgsConstructor
 public class JwtAuthenticationFilterComponent extends OncePerRequestFilter {
-  @NonNull private final JwtService jwtService;
-
-  @NonNull private final UserRepository userRepository;
-
-  @NonNull private final SessionCookieService sessionCookieService;
+  private final JwtService jwtService;
+  private final UserRepository userRepository;
+  private final SessionCookieService sessionCookieService;
 
   @Override
   protected void doFilterInternal(
