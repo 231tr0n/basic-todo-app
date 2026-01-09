@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, input, OnInit } from '@angular/core';
-import { UpdateUserDto, UserDto } from '../../types/types';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, effect, inject, input, OnInit } from '@angular/core';
+import { PatchUserDto, UpdateUserDto, UserDto } from '../../types/types';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { MatFabButton } from '@angular/material/button';
@@ -24,34 +24,45 @@ import { GlobalApi } from '../../services/global-api';
 	changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserSettings implements OnInit {
-	readonly user = input<UserDto | null>();
+	readonly user = input.required<UserDto>();
 	protected readonly adminAuthority = 'ADMIN';
 	private readonly globalApi = inject(GlobalApi);
 
 	protected readonly updateUserForm = new FormGroup({
-		username: new FormControl(''),
+		username: new FormControl('', [Validators.min(1)]),
 		authorities: new FormControl<string[]>([])
 	});
 
-	ngOnInit() {
-		this.updateUserForm.setValue({
-			username: this.user()?.username ?? '',
-			authorities: this.user()?.authorities.map((value) => value.authority) ?? []
+	protected readonly updatePasswordForm = new FormGroup({
+		oldPassword: new FormControl('', [Validators.required]),
+		newPassword: new FormControl('', [Validators.required])
+	});
+
+	constructor() {
+		effect(() => {
+			this.updateUserForm.setValue({
+				username: this.user().username,
+				authorities: this.user().authorities.map((value) => value.authority)
+			});
 		});
 	}
 
-	onSubmit() {
-		const updateUserDto = {} as UpdateUserDto;
-		if (this.updateUserForm.value.username && this.updateUserForm.value.username !== '') {
-			updateUserDto.username = this.updateUserForm.value.username;
-		}
-		if (
-			this.updateUserForm.value.authorities &&
-			this.updateUserForm.value.authorities.length !== this.user()?.authorities.length
-		) {
-			updateUserDto.authorities = this.updateUserForm.value.authorities;
-		}
+	ngOnInit() {
+		this.updateUserForm.setValue({
+			username: this.user().username,
+			authorities: this.user().authorities.map((value) => value.authority)
+		});
+	}
 
-		this.globalApi.updateUser(updateUserDto, this.user()?.id).subscribe();
+	onUserFormSubmit() {
+		this.globalApi
+			.updateUser(this.updateUserForm.getRawValue() as UpdateUserDto, this.user().id)
+			.subscribe();
+	}
+
+	onPasswordFormSubmit() {
+		this.globalApi
+			.patchUser(this.updatePasswordForm.getRawValue() as PatchUserDto, this.user().id)
+			.subscribe();
 	}
 }
