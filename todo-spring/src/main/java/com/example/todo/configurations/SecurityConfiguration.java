@@ -56,7 +56,7 @@ public class SecurityConfiguration {
             auth ->
                 auth.requestMatchers("/api/signup")
                     .permitAll()
-                    .requestMatchers("/api/user", "/api/todos", "/api/todos/**", "/api/signout")
+                    .requestMatchers("/api/users", "/api/users/**", "/api/signout")
                     .authenticated()
                     .requestMatchers("/actuator/**")
                     .hasRole(Constants.ADMIN_AUTHORITY)

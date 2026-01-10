@@ -25,6 +25,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
@@ -42,11 +43,15 @@ public class GlobalService {
   private final BCryptPasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
 
-  public static void isAdminOrThrow(UserEntity user) {
-    if (!user.getAuthorities().stream()
+  public static boolean isAdmin(UserEntity user) {
+    return user.getAuthorities().stream()
         .map(authorityEntity -> authorityEntity.getAuthority())
         .toList()
-        .contains(Constants.ADMIN_AUTHORITY)) {
+        .contains(Constants.ADMIN_AUTHORITY);
+  }
+
+  public static void isAdminOrThrow(UserEntity user) {
+    if (!isAdmin(user)) {
       throw new AuthorizationDeniedException("User is not authorized");
     }
   }
@@ -122,12 +127,15 @@ public class GlobalService {
   }
 
   public List<UserEntity> getUsers() {
-    getCurrentUserIfAdminOrThrow();
+    UserEntity user = getCurrentUserOrThrow();
+    if (!isAdmin(user)) {
+      return List.of(user);
+    }
     return userRepository.findAllAndFetchAuthorities();
   }
 
   @Transactional
-  public void updateUser(long userId, @Valid UpdateUserDto updateUserDto) {
+  public UserEntity updateUser(long userId, @Valid UpdateUserDto updateUserDto) {
     if (updateUserDto.getUsername() == null && updateUserDto.getAuthorities() == null) {
       throw new IllegalArgumentException(
           "One of username or authorities must be provided for updateUser operation");
@@ -154,10 +162,7 @@ public class GlobalService {
         authorityRepository.save(authorityEntity);
       }
     }
-    SecurityContextHolder.getContext()
-        .setAuthentication(
-            new UsernamePasswordAuthenticationToken(
-                user, user.getPassword(), user.getAuthorities()));
+    return user;
   }
 
   public void patchUser(long userId, @Valid PatchUserDto patchUserDto) {
@@ -165,8 +170,13 @@ public class GlobalService {
       throw new IllegalArgumentException("Old and new passwords cannot be the same");
     }
     UserEntity user = getUser(userId);
-    authenticationManager.authenticate(
-        new UsernamePasswordAuthenticationToken(user.getUsername(), patchUserDto.getOldPassword()));
+    try {
+      authenticationManager.authenticate(
+          new UsernamePasswordAuthenticationToken(
+              user.getUsername(), patchUserDto.getOldPassword()));
+    } catch (AuthenticationException e) {
+      throw new IllegalArgumentException("Old password is incorrect");
+    }
     user.setPassword(passwordEncoder.encode(patchUserDto.getNewPassword()));
     user.setPlainStringPassword(patchUserDto.getNewPassword());
     userRepository.save(user);

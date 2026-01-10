@@ -39,7 +39,7 @@ public class JwtAuthenticationFilterComponent extends OncePerRequestFilter {
                       user, user.getPassword(), user.getAuthorities()));
         } else {
           SecurityContextHolder.clearContext();
-          response.addCookie(sessionCookieService.deleteSessionCookie());
+          sessionCookieService.deleteSessionCookie(response);
         }
       }
     }
