@@ -24,14 +24,14 @@ import { TodoGrid } from '../todo-grid/todo-grid';
 	changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Home implements OnInit, OnDestroy {
-	protected user: UserDto | null = null;
+	protected loggedInUser: UserDto | null = null;
 	private readonly session = inject(Session);
 	private readonly changeDetector = inject(ChangeDetectorRef);
 	private sessionSubscription: Subscription | null = null;
 
 	ngOnInit() {
 		this.sessionSubscription = this.session.loggedInUser.subscribe((user) => {
-			this.user = user;
+			this.loggedInUser = user;
 			this.changeDetector.markForCheck();
 		});
 	}

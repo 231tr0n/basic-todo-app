@@ -1,7 +1,7 @@
 <div class="user-signing-container">
 	<mat-card class="example-card" appearance="outlined">
 		<mat-card-content>
-			@if (user === null) {
+			@if (loggedInUser === null) {
 				<mat-tab-group>
 					<mat-tab label="Sign In">
 						<div class="tab-padding">
@@ -18,12 +18,12 @@
 				<mat-tab-group>
 					<mat-tab label="User Settings">
 						<div class="tab-padding">
-							<app-user-settings [user]="user" />
+							<app-user-settings [user]="loggedInUser" />
 						</div>
 					</mat-tab>
 					<mat-tab label="Todo Grid">
 						<div class="tab-padding">
-							<app-todo-grid [user]="user" />
+							<app-todo-grid [user]="loggedInUser" />
 						</div>
 					</mat-tab>
 				</mat-tab-group>

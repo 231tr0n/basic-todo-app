@@ -1,8 +1,16 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	ChangeDetectorRef,
+	Component,
+	effect,
+	inject,
+	input,
+	OnInit
+} from '@angular/core';
 import { PatchUserDto, UpdateUserDto, UserDto } from '../../types/types';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
-import { MatFormField, MatInput, MatLabel } from '@angular/material/input';
+import { MatError, MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { MatFabButton } from '@angular/material/button';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { GlobalApi } from '../../services/global-api';
@@ -17,7 +25,8 @@ import { GlobalApi } from '../../services/global-api';
 		MatSelect,
 		MatOption,
 		MatLabel,
-		MatFormField
+		MatFormField,
+		MatError
 	],
 	templateUrl: './user-settings.html',
 	styleUrl: './user-settings.css',
@@ -27,6 +36,9 @@ export class UserSettings implements OnInit {
 	readonly user = input.required<UserDto>();
 	protected readonly adminAuthority = 'ADMIN';
 	private readonly globalApi = inject(GlobalApi);
+	private readonly changeDetector = inject(ChangeDetectorRef);
+	protected userUpdateFailed = false;
+	protected userPasswordFailed = false;
 
 	protected readonly updateUserForm = new FormGroup({
 		username: new FormControl('', [Validators.min(1)]),
@@ -57,12 +69,30 @@ export class UserSettings implements OnInit {
 	onUserFormSubmit() {
 		this.globalApi
 			.updateUser(this.updateUserForm.getRawValue() as UpdateUserDto, this.user().id)
-			.subscribe();
+			.subscribe({
+				next: () => {
+					this.userUpdateFailed = false;
+					this.changeDetector.markForCheck();
+				},
+				error: () => {
+					this.userUpdateFailed = true;
+					this.changeDetector.markForCheck();
+				}
+			});
 	}
 
 	onPasswordFormSubmit() {
 		this.globalApi
 			.patchUser(this.updatePasswordForm.getRawValue() as PatchUserDto, this.user().id)
-			.subscribe();
+			.subscribe({
+				next: () => {
+					this.userPasswordFailed = false;
+					this.changeDetector.markForCheck();
+				},
+				error: () => {
+					this.userPasswordFailed = true;
+					this.changeDetector.markForCheck();
+				}
+			});
 	}
 }

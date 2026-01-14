@@ -19,6 +19,9 @@
 			<mat-icon>update</mat-icon>Update
 		</button>
 	</div>
+	@if (userUpdateFailed) {
+		<p><mat-error>Username already exists</mat-error></p>
+	}
 </form>
 <h3>Update user password</h3>
 <form [formGroup]="updatePasswordForm" (ngSubmit)="onPasswordFormSubmit()">
@@ -39,4 +42,7 @@
 			<mat-icon>update</mat-icon>Update
 		</button>
 	</div>
+	@if (userPasswordFailed) {
+		<p><mat-error>New and old password are not same</mat-error></p>
+	}
 </form>

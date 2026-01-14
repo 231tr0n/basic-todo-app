@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { UserDto } from '../types/types';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class Session {
-	readonly loggedInUser = new Subject<UserDto | null>();
+	readonly loggedInUser = new BehaviorSubject<UserDto | null>(null);
 }
