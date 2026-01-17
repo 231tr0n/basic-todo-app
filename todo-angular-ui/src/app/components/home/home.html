@@ -1,5 +1,5 @@
 <div class="user-signing-container">
-	<mat-card class="example-card" appearance="outlined">
+	<mat-card appearance="outlined">
 		<mat-card-content>
 			@if (loggedInUser === null) {
 				<mat-tab-group>
@@ -15,18 +15,45 @@
 					</mat-tab>
 				</mat-tab-group>
 			} @else {
-				<mat-tab-group>
-					<mat-tab label="User Settings">
-						<div class="tab-padding">
-							<app-user-settings [user]="loggedInUser" />
-						</div>
-					</mat-tab>
-					<mat-tab label="Todo Grid">
-						<div class="tab-padding">
-							<app-todo-grid [user]="loggedInUser" />
-						</div>
-					</mat-tab>
-				</mat-tab-group>
+				<div class="user-selection">
+					<mat-form-field subscriptSizing="dynamic">
+						<mat-select [(value)]="selectedUser">
+							@for (user of users; track user) {
+								<mat-option [value]="user">
+									{{ user.username }}
+								</mat-option>
+							}
+						</mat-select>
+					</mat-form-field>
+					<button type="button" matFab (click)="onClickRefresh()">
+						<mat-icon>refresh</mat-icon>
+					</button>
+					<button type="button" matFab (click)="onClickDelete()">
+						<mat-icon>delete</mat-icon>
+					</button>
+				</div>
+				<br />
+				<mat-card>
+					<mat-card-content>
+						<mat-tab-group>
+							<mat-tab label="User Settings">
+								<div class="tab-padding">
+									<app-user-settings [user]="selectedUser" />
+								</div>
+							</mat-tab>
+							<mat-tab label="Todo Grid">
+								<div class="tab-padding">
+									<app-todo-grid [user]="selectedUser" />
+								</div>
+							</mat-tab>
+							<mat-tab label="Create User">
+								<div class="tab-padding">
+									<app-signup />
+								</div>
+							</mat-tab>
+						</mat-tab-group>
+					</mat-card-content>
+				</mat-card>
 			}
 		</mat-card-content>
 	</mat-card>

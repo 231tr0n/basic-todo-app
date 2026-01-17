@@ -5,6 +5,13 @@
 	transform: translate(-50%, -50%);
 }
 
+.user-selection {
+	display: flex;
+	gap: 5px;
+	justify-content: center;
+	align-items: center;
+}
+
 .tab-padding {
 	padding: 10px;
 }

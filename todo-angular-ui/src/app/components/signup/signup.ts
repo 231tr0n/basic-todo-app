@@ -42,6 +42,7 @@ export class Signup {
 			this.globalApi.signUp(this.signUpForm.value as SignUpDto).subscribe({
 				next: () => {
 					this.signUpFailed = false;
+					this.signUpForm.reset();
 					this.changeDetector.markForCheck();
 				},
 				error: () => {

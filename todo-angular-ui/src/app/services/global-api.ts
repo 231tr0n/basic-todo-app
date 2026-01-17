@@ -31,7 +31,7 @@ export class GlobalApi {
 	}
 
 	signUp(dto: SignUpDto) {
-		return this.http.post(`${BASE_URL}/users`, dto, {
+		return this.http.post(`${BASE_URL}/signup`, dto, {
 			withCredentials: true
 		});
 	}
@@ -67,9 +67,17 @@ export class GlobalApi {
 
 	deleteUser(userId?: number) {
 		userId = userId ?? CURRENT_USER_ID;
-		return this.http.delete(`${BASE_URL}/users/${userId.toString()}`, {
+		const subscription = this.http.delete(`${BASE_URL}/users/${userId.toString()}`, {
 			withCredentials: true
 		});
+		if (userId === CURRENT_USER_ID) {
+			return subscription.pipe(
+				tap(() => {
+					this.session.loggedInUser.next(null);
+				})
+			);
+		}
+		return subscription;
 	}
 
 	patchUser(dto: PatchUserDto, userId?: number) {
@@ -81,15 +89,17 @@ export class GlobalApi {
 
 	updateUser(dto: UpdateUserDto, userId?: number) {
 		userId = userId ?? CURRENT_USER_ID;
-		return this.http
-			.put(`${BASE_URL}/users/${userId.toString()}`, dto, {
-				withCredentials: true
-			})
-			.pipe(
+		const subscription = this.http.put(`${BASE_URL}/users/${userId.toString()}`, dto, {
+			withCredentials: true
+		});
+		if (userId === CURRENT_USER_ID) {
+			return subscription.pipe(
 				tap(() => {
 					this.getUser().subscribe();
 				})
 			);
+		}
+		return subscription;
 	}
 
 	getTodos(userId?: number) {

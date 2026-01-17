@@ -1,13 +1,6 @@
 <mat-toolbar class="flex-spacer">
 	<span>Angular Todo UI</span>
 	<span>
-		<button type="button" class="button-margin" matMiniFab (click)="toggleMode()">
-			@if (darkMode) {
-				<mat-icon>dark_mode</mat-icon>
-			} @else {
-				<mat-icon>light_mode</mat-icon>
-			}
-		</button>
 		@if (user !== null) {
 			<button
 				type="button"
@@ -17,5 +10,12 @@
 				<mat-icon>logout</mat-icon>
 			</button>
 		}
+		<button type="button" class="button-margin" matMiniFab (click)="toggleMode()">
+			@if (darkMode) {
+				<mat-icon>dark_mode</mat-icon>
+			} @else {
+				<mat-icon>light_mode</mat-icon>
+			}
+		</button>
 	</span>
 </mat-toolbar>
