@@ -1,6 +1,7 @@
 package com.example.todo.dtos;
 
 import jakarta.validation.constraints.Size;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,8 +17,8 @@ import lombok.ToString;
 @NoArgsConstructor
 public class UpdateTodoDto {
   @Size(min = 1, max = 255)
-  private String title;
+  private Optional<String> title;
 
   @Size(min = 1, max = 255)
-  private String description;
+  private Optional<String> description;
 }

@@ -137,31 +137,37 @@ public class GlobalService {
 
   @Transactional
   public UserEntity updateUser(long userId, @Valid UpdateUserDto updateUserDto) {
-    if (updateUserDto.getUsername() == null && updateUserDto.getAuthorities() == null) {
+    if (updateUserDto.getUsername().isEmpty() && updateUserDto.getAuthorities().isEmpty()) {
       throw new IllegalArgumentException(
           "One of username or authorities must be provided for updateUser operation");
     }
     UserEntity user = getUser(userId);
-    if (updateUserDto.getUsername() != null
-        && !updateUserDto.getUsername().equals(user.getUsername())) {
-      notExistsUsernameOrThrow(updateUserDto.getUsername());
-      user.setUsername(updateUserDto.getUsername());
-      userRepository.save(user);
-    }
-    if (updateUserDto.getAuthorities() != null
-        && !updateUserDto
-            .getAuthorities()
-            .equals(
-                user.getAuthorities().stream()
-                    .map(AuthorityEntity::getAuthority)
-                    .collect(Collectors.toSet()))) {
-      authorityRepository.deleteAllByUserId(user.getId());
-      for (String authority : updateUserDto.getAuthorities()) {
-        AuthorityEntity authorityEntity =
-            AuthorityEntity.builder().authority(authority).user(user).build();
-        authorityRepository.save(authorityEntity);
-      }
-    }
+    updateUserDto
+        .getUsername()
+        .ifPresent(
+            (username) -> {
+              if (!username.equals(user.getUsername())) {
+                notExistsUsernameOrThrow(username);
+                user.setUsername(username);
+                userRepository.save(user);
+              }
+            });
+    updateUserDto
+        .getAuthorities()
+        .ifPresent(
+            (authorities) -> {
+              if (!authorities.equals(
+                  user.getAuthorities().stream()
+                      .map(AuthorityEntity::getAuthority)
+                      .collect(Collectors.toSet()))) {
+                authorityRepository.deleteAllByUserId(user.getId());
+                for (String authority : authorities) {
+                  AuthorityEntity authorityEntity =
+                      AuthorityEntity.builder().authority(authority).user(user).build();
+                  authorityRepository.save(authorityEntity);
+                }
+              }
+            });
     return user;
   }
 
@@ -212,18 +218,27 @@ public class GlobalService {
   }
 
   public void updateUserTodo(long userId, long todoId, @Valid UpdateTodoDto updateTodoDto) {
-    if (updateTodoDto.getTitle() == null && updateTodoDto.getDescription() == null) {
+    if (updateTodoDto.getTitle().isEmpty() && updateTodoDto.getDescription().isEmpty()) {
       throw new IllegalArgumentException(
           "One of title or description must be provided for updateUserTodo operation");
     }
     TodoEntity todo = getUserTodo(userId, todoId);
-    if (updateTodoDto.getTitle() != null && !updateTodoDto.getTitle().equals(todo.getTitle())) {
-      todo.setTitle(updateTodoDto.getTitle());
-    }
-    if (updateTodoDto.getDescription() != null
-        && !updateTodoDto.getDescription().equals(todo.getDescription())) {
-      todo.setDescription(updateTodoDto.getDescription());
-    }
+    updateTodoDto
+        .getTitle()
+        .ifPresent(
+            (title) -> {
+              if (!title.equals(todo.getTitle())) {
+                todo.setTitle(title);
+              }
+            });
+    updateTodoDto
+        .getDescription()
+        .ifPresent(
+            (description) -> {
+              if (!description.equals(todo.getDescription())) {
+                todo.setDescription(description);
+              }
+            });
     todoRepository.save(todo);
   }
 
