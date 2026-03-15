@@ -15,7 +15,7 @@
 	},
 	"newProjectRoot": "projects",
 	"projects": {
-		"todo-angular-ui": {
+		"todo-app-mcp-ai-chat-client": {
 			"projectType": "application",
 			"schematics": {},
 			"root": "",
@@ -64,10 +64,10 @@
 					"options": { "proxyConfig": "src/proxy.conf.json" },
 					"configurations": {
 						"production": {
-							"buildTarget": "todo-angular-ui:build:production"
+							"buildTarget": "todo-app-mcp-ai-chat-client:build:production"
 						},
 						"development": {
-							"buildTarget": "todo-angular-ui:build:development"
+							"buildTarget": "todo-app-mcp-ai-chat-client:build:development"
 						}
 					},
 					"defaultConfiguration": "development"
