@@ -86,7 +86,7 @@ public class GlobalService {
     }
   }
 
-  public UserEntity signIn(@Valid SignInDto signInDto) {
+  public void signIn(@Valid SignInDto signInDto) {
     Authentication auth =
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
@@ -95,7 +95,6 @@ public class GlobalService {
     UserEntity user = (UserEntity) auth.getPrincipal();
     user.setLoggedOut(false);
     userRepository.save(user);
-    return user;
   }
 
   public void signOut() {
@@ -136,7 +135,7 @@ public class GlobalService {
   }
 
   @Transactional
-  public UserEntity updateUser(long userId, @Valid UpdateUserDto updateUserDto) {
+  public void updateUser(long userId, @Valid UpdateUserDto updateUserDto) {
     if (updateUserDto.getUsername().isEmpty() && updateUserDto.getAuthorities().isEmpty()) {
       throw new IllegalArgumentException(
           "One of username or authorities must be provided for updateUser operation");
@@ -168,7 +167,6 @@ public class GlobalService {
                 }
               }
             });
-    return user;
   }
 
   public void patchUser(long userId, @Valid PatchUserDto patchUserDto) {

@@ -16,9 +16,6 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateTodoDto {
-  @Size(min = 1, max = 255)
-  private Optional<String> title;
-
-  @Size(min = 1, max = 255)
-  private Optional<String> description;
+  private Optional<@Size(min = 1, max = 255) String> title;
+  private Optional<@Size(min = 1, max = 255) String> description;
 }

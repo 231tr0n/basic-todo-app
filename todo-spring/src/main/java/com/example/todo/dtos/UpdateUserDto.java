@@ -17,9 +17,6 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateUserDto {
-  @Size(min = 1, max = 255)
-  private Optional<String> username;
-
-  @Size(min = 0, max = 10)
-  private Optional<Set<String>> authorities;
+  private Optional<@Size(min = 1, max = 255) String> username;
+  private Optional<@Size(min = 0, max = 10) Set<String>> authorities;
 }

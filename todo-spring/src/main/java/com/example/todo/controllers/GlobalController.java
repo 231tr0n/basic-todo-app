@@ -50,18 +50,20 @@ public class GlobalController {
   }
 
   @PutMapping("/users/{userId}")
-  public UserEntity updateUser(
+  public void updateUser(
       @PathVariable long userId,
       @RequestBody UpdateUserDto updateUserDto,
       HttpServletResponse response) {
-    UserEntity user = globalService.updateUser(userId, updateUserDto);
+    globalService.updateUser(userId, updateUserDto);
     if (userId == 0
         || userId
-            == ((UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal())
-                .getId()) {
-      sessionCookieService.generateSessionCookie(response, jwtService.generateJwt(user));
+                == ((UserEntity)
+                        SecurityContextHolder.getContext().getAuthentication().getPrincipal())
+                    .getId()
+            && updateUserDto.getUsername().isPresent()) {
+      sessionCookieService.generateSessionCookie(
+          response, jwtService.generateJwt(updateUserDto.getUsername().get()));
     }
-    return user;
   }
 
   @PatchMapping("/users/{userId}")
@@ -122,10 +124,10 @@ public class GlobalController {
   }
 
   @PostMapping("/signin")
-  public UserEntity signIn(@RequestBody SignInDto signInDto, HttpServletResponse response) {
-    UserEntity user = globalService.signIn(signInDto);
-    sessionCookieService.generateSessionCookie(response, jwtService.generateJwt(user));
-    return user;
+  public void signIn(@RequestBody SignInDto signInDto, HttpServletResponse response) {
+    globalService.signIn(signInDto);
+    sessionCookieService.generateSessionCookie(
+        response, jwtService.generateJwt(signInDto.getUsername()));
   }
 
   @PostMapping("/signout")

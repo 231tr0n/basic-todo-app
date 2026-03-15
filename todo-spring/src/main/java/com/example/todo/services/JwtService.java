@@ -2,7 +2,6 @@ package com.example.todo.services;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.example.todo.entities.UserEntity;
 import java.time.Instant;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,10 +18,10 @@ public class JwtService {
     this.secret = secret;
   }
 
-  public String generateJwt(@NonNull UserEntity user) {
+  public String generateJwt(@NonNull String username) {
     Instant now = Instant.now();
     return JWT.create()
-        .withSubject(user.getUsername())
+        .withSubject(username)
         .withIssuedAt(now)
         .withExpiresAt(now.plusSeconds(expiry))
         .sign(Algorithm.HMAC512(secret));
