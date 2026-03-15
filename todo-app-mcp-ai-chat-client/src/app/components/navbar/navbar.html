@@ -1,15 +1,6 @@
 <mat-toolbar class="flex-spacer">
-	<span>Angular Todo UI</span>
+	<span>Todo MCP AI Chat Client</span>
 	<span>
-		@if (user !== null) {
-			<button
-				type="button"
-				class="button-margin"
-				matMiniFab
-				(click)="globalApi.signOut().subscribe()">
-				<mat-icon>logout</mat-icon>
-			</button>
-		}
 		<button type="button" class="button-margin" matMiniFab (click)="toggleMode()">
 			@if (darkMode) {
 				<mat-icon>dark_mode</mat-icon>

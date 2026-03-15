@@ -11,10 +11,6 @@ import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { UserDto } from '../../types/types';
 import { Session } from '../../services/session';
 import { Subscription } from 'rxjs';
-import { Signup } from '../signup/signup';
-import { Signin } from '../signin/signin';
-import { UserSettings } from '../user-settings/user-settings';
-import { TodoGrid } from '../todo-grid/todo-grid';
 import { GlobalApi } from '../../services/global-api';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 import { MatFabButton } from '@angular/material/button';
@@ -27,10 +23,6 @@ import { MatIcon } from '@angular/material/icon';
 		MatTabGroup,
 		MatCard,
 		MatCardContent,
-		Signup,
-		Signin,
-		UserSettings,
-		TodoGrid,
 		MatSelect,
 		MatOption,
 		MatFormField,
