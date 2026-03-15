@@ -11,8 +11,7 @@ import {
 	UpdateUserDto,
 	UserDto
 } from '../types/types';
-import { Session } from './session';
-import { tap } from 'rxjs';
+import { BehaviorSubject, tap } from 'rxjs';
 import { BASE_URL, CURRENT_USER_ID } from '../constants';
 
 @Injectable({
@@ -20,12 +19,21 @@ import { BASE_URL, CURRENT_USER_ID } from '../constants';
 })
 export class GlobalApi {
 	private readonly http = inject(HttpClient);
-	private readonly session = inject(Session);
+
+	readonly loggedInUser = new BehaviorSubject<UserDto | null>(null);
+
+	constructor() {
+		this.getUser().subscribe((user) => {
+			this.loggedInUser.next(user);
+		});
+	}
 
 	signIn(dto: SignInDto) {
-		return this.http.post<UserDto>(`${BASE_URL}/signin`, dto).pipe(
-			tap((value) => {
-				this.session.loggedInUser.next(value);
+		return this.http.post(`${BASE_URL}/signin`, dto).pipe(
+			tap(() => {
+				this.getUser().subscribe((user) => {
+					this.loggedInUser.next(user);
+				});
 			})
 		);
 	}
@@ -47,7 +55,7 @@ export class GlobalApi {
 			)
 			.pipe(
 				tap(() => {
-					this.session.loggedInUser.next(null);
+					this.loggedInUser.next(null);
 				})
 			);
 	}
@@ -73,7 +81,7 @@ export class GlobalApi {
 		if (userId === CURRENT_USER_ID) {
 			return subscription.pipe(
 				tap(() => {
-					this.session.loggedInUser.next(null);
+					this.loggedInUser.next(null);
 				})
 			);
 		}
