@@ -18,9 +18,9 @@ import com.example.todo.repositories.UserRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -43,21 +43,21 @@ public class GlobalService {
   private final BCryptPasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
 
-  public static boolean isAdmin(UserEntity user) {
+  public static boolean isAdmin(@NonNull UserEntity user) {
     return user.getAuthorities().stream()
         .map(authorityEntity -> authorityEntity.getAuthority())
         .toList()
         .contains(Constants.ADMIN_AUTHORITY);
   }
 
-  public static void isAdminOrThrow(UserEntity user) {
+  public static void isAdminOrThrow(@NonNull UserEntity user) {
     if (!isAdmin(user)) {
       throw new AuthorizationDeniedException("User is not authorized");
     }
   }
 
-  public void notExistsUsernameOrThrow(String username) {
-    if (userRepository.findByUsername(username) != null) {
+  public void notExistsUsernameOrThrow(@NonNull String username) {
+    if (userRepository.findByUsername(username).isPresent()) {
       throw new IllegalArgumentException("Username already exists");
     }
   }
@@ -66,21 +66,22 @@ public class GlobalService {
   @CircuitBreaker(name = "todo")
   public void createUser(@Valid CreateUserDto signUpDto) {
     notExistsUsernameOrThrow(signUpDto.getUsername());
-    UserEntity user = new UserEntity();
-    user.setUsername(signUpDto.getUsername());
-    user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
-    user.setPlainStringPassword(signUpDto.getPassword());
-    user.setEnabled(true);
-    user.setLoggedOut(true);
-    user.setAccountNonLocked(true);
-    user.setAccountNonExpired(true);
-    user.setCredentialsNonExpired(true);
+    UserEntity user =
+        UserEntity.builder()
+            .username(signUpDto.getUsername())
+            .password(passwordEncoder.encode(signUpDto.getPassword()))
+            .plainStringPassword(signUpDto.getPassword())
+            .enabled(true)
+            .loggedOut(true)
+            .accountNonLocked(true)
+            .accountNonExpired(true)
+            .credentialsNonExpired(true)
+            .build();
     userRepository.save(user);
-    user = userRepository.findByUsername(signUpDto.getUsername());
+    user = userRepository.findByUsername(signUpDto.getUsername()).get();
     for (String authority : signUpDto.getAuthorities()) {
-      AuthorityEntity authorityEntity = new AuthorityEntity();
-      authorityEntity.setAuthority(authority);
-      authorityEntity.setUser(user);
+      AuthorityEntity authorityEntity =
+          AuthorityEntity.builder().authority(authority).user(user).build();
       authorityRepository.save(authorityEntity);
     }
   }
@@ -123,7 +124,7 @@ public class GlobalService {
       return currentUser;
     }
     isAdminOrThrow(currentUser);
-    return userRepository.findByIdAndFetchAuthorities(userId);
+    return userRepository.findByIdAndFetchAuthorities(userId).get();
   }
 
   public List<UserEntity> getUsers() {
@@ -156,9 +157,8 @@ public class GlobalService {
                     .collect(Collectors.toSet()))) {
       authorityRepository.deleteAllByUserId(user.getId());
       for (String authority : updateUserDto.getAuthorities()) {
-        AuthorityEntity authorityEntity = new AuthorityEntity();
-        authorityEntity.setAuthority(authority);
-        authorityEntity.setUser(user);
+        AuthorityEntity authorityEntity =
+            AuthorityEntity.builder().authority(authority).user(user).build();
         authorityRepository.save(authorityEntity);
       }
     }
@@ -191,21 +191,19 @@ public class GlobalService {
   @CircuitBreaker(name = "todo")
   public void createUserTodo(long userId, @Valid CreateTodoDto createTodoDto) {
     UserEntity user = getUser(userId);
-    TodoEntity todo = new TodoEntity();
-    todo.setTitle(createTodoDto.getTitle());
-    todo.setDescription(createTodoDto.getDescription());
-    todo.setStatus(StatusEnum.NOT_STARTED);
-    todo.setUser(user);
+    TodoEntity todo =
+        TodoEntity.builder()
+            .title(createTodoDto.getTitle())
+            .description(createTodoDto.getDescription())
+            .status(StatusEnum.NOT_STARTED)
+            .user(user)
+            .build();
     todoRepository.save(todo);
   }
 
   public TodoEntity getUserTodo(long userId, long todoId) {
     UserEntity user = getUser(userId);
-    TodoEntity todo = todoRepository.findByUserIdAndId(user.getId(), todoId);
-    if (todo == null) {
-      throw new NoSuchElementException("Todo not found");
-    }
-    return todo;
+    return todoRepository.findByUserIdAndId(user.getId(), todoId).get();
   }
 
   public List<TodoEntity> getUserTodos(long userId) {

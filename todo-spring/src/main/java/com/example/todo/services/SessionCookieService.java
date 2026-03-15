@@ -3,6 +3,7 @@ package com.example.todo.services;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -22,7 +23,7 @@ public class SessionCookieService {
     this.expiry = expiry;
   }
 
-  private ResponseCookie createSessionCookie(String value, int expiry) {
+  private ResponseCookie createSessionCookie(@NonNull String value, int expiry) {
     return ResponseCookie.from(sessionCookieName, value)
         .httpOnly(true)
         .path("/")
@@ -33,15 +34,15 @@ public class SessionCookieService {
         .build();
   }
 
-  public void generateSessionCookie(HttpServletResponse response, String value) {
+  public void generateSessionCookie(@NonNull HttpServletResponse response, @NonNull String value) {
     response.setHeader(HttpHeaders.SET_COOKIE, createSessionCookie(value, expiry).toString());
   }
 
-  public void deleteSessionCookie(HttpServletResponse response) {
+  public void deleteSessionCookie(@NonNull HttpServletResponse response) {
     response.setHeader(HttpHeaders.SET_COOKIE, createSessionCookie("", 0).toString());
   }
 
-  public Cookie getSessionCookie(HttpServletRequest request) {
-    return WebUtils.getCookie(request, sessionCookieName);
+  public Optional<Cookie> getSessionCookie(@NonNull HttpServletRequest request) {
+    return Optional.ofNullable(WebUtils.getCookie(request, sessionCookieName));
   }
 }

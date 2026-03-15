@@ -2,6 +2,7 @@ package com.example.todo.repositories;
 
 import com.example.todo.entities.TodoEntity;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,7 +15,7 @@ public interface TodoRepository extends JpaRepository<TodoEntity, Long> {
   void deleteAllByUserId(long userId);
 
   @Query("SELECT t FROM TodoEntity t WHERE t.user.id = :userId AND t.id = :id")
-  TodoEntity findByUserIdAndId(long userId, long id);
+  Optional<TodoEntity> findByUserIdAndId(long userId, long id);
 
   @Query("SELECT t FROM TodoEntity t WHERE t.user.id = :userId")
   List<TodoEntity> findByUserId(long userId);

@@ -2,11 +2,9 @@ package com.example.todo.configurations;
 
 import com.example.todo.components.JwtAuthenticationFilterComponent;
 import com.example.todo.constants.Constants;
-import com.example.todo.entities.UserEntity;
 import com.example.todo.repositories.UserRepository;
 import java.util.List;
-import lombok.NonNull;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,7 +14,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -25,18 +22,10 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
+@AllArgsConstructor
 public class SecurityConfiguration {
   private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
   private final UserRepository userRepository;
-
-  public SecurityConfiguration(
-      JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent,
-      UserRepository userRepository,
-      @NonNull @Value("${server.host}") String host,
-      @Value("${server.port}") long port) {
-    this.jwtAuthenticationFilterComponent = jwtAuthenticationFilterComponent;
-    this.userRepository = userRepository;
-  }
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -80,11 +69,7 @@ public class SecurityConfiguration {
     DaoAuthenticationProvider authenticationProvider =
         new DaoAuthenticationProvider(
             username -> {
-              UserEntity user = userRepository.findByUsernameAndFetchAuthorities(username);
-              if (user == null) {
-                throw new UsernameNotFoundException("User not found");
-              }
-              return user;
+              return userRepository.findByUsernameAndFetchAuthorities(username).get();
             });
     authenticationProvider.setPasswordEncoder(passwordEncoder());
     return authenticationProvider;

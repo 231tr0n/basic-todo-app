@@ -1,8 +1,6 @@
 package com.example.todo.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,17 +11,25 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 @Entity
 @Table(name = "todos")
-@Data
+@Getter
+@Setter
+@ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TodoEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false, unique = true)
-  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private long id;
 
   @Column(nullable = false, length = 255)
@@ -39,7 +45,6 @@ public class TodoEntity {
   @JsonBackReference
   @ManyToOne
   @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
-  @JsonIgnore
   @ToString.Exclude
   private UserEntity user;
 

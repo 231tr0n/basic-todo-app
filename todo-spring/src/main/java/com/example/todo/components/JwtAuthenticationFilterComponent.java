@@ -1,12 +1,10 @@
 package com.example.todo.components;
 
-import com.example.todo.entities.UserEntity;
 import com.example.todo.repositories.UserRepository;
 import com.example.todo.services.JwtService;
 import com.example.todo.services.SessionCookieService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -28,20 +26,26 @@ public class JwtAuthenticationFilterComponent extends OncePerRequestFilter {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws IOException, ServletException {
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
-      Cookie cookie = sessionCookieService.getSessionCookie(request);
-      if (cookie != null) {
-        String username = jwtService.decodeJwt(cookie.getValue());
-        UserEntity user = userRepository.findByUsernameAndFetchAuthorities(username);
-        if (user != null && user.isEnabled() && !user.isLoggedOut()) {
-          SecurityContextHolder.getContext()
-              .setAuthentication(
-                  new UsernamePasswordAuthenticationToken(
-                      user, user.getPassword(), user.getAuthorities()));
-        } else {
-          SecurityContextHolder.clearContext();
-          sessionCookieService.deleteSessionCookie(response);
-        }
-      }
+      sessionCookieService
+          .getSessionCookie(request)
+          .ifPresent(
+              (cookie) -> {
+                String username = jwtService.decodeJwt(cookie.getValue());
+                userRepository
+                    .findByUsernameAndFetchAuthorities(username)
+                    .ifPresent(
+                        (user) -> {
+                          if (user.isEnabled() && !user.isLoggedOut()) {
+                            SecurityContextHolder.getContext()
+                                .setAuthentication(
+                                    new UsernamePasswordAuthenticationToken(
+                                        user, user.getPassword(), user.getAuthorities()));
+                          } else {
+                            SecurityContextHolder.clearContext();
+                            sessionCookieService.deleteSessionCookie(response);
+                          }
+                        });
+              });
     }
     filterChain.doFilter(request, response);
   }
