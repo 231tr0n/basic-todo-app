@@ -1,5 +1,4 @@
 ${AnsiColor.GREEN}
-
 ████████╗ ██████╗ ██████╗  ██████╗      █████╗ ██████╗ ██████╗
 ╚══██╔══╝██╔═══██╗██╔══██╗██╔═══██╗    ██╔══██╗██╔══██╗██╔══██╗
    ██║   ██║   ██║██║  ██║██║   ██║    ███████║██████╔╝██████╔╝
@@ -9,6 +8,4 @@ ${AnsiColor.GREEN}
 
 Application: ${spring.application.name}
 
-Version: ${spring-boot.version}
-
-${AnsiColor.DEFAULT}
+Version: ${spring-boot.version} ${AnsiColor.DEFAULT}

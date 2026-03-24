@@ -1,3 +1,35 @@
-<mat-card appearance="outlined">
-	<mat-card-content> </mat-card-content>
+<mat-card class="chat-card">
+	<mat-card-content #scrollable class="scrollable">
+		@for (message of sessionData; track message) {
+			<div class="message" [class.user]="message.author === 'User'">
+				<mat-card class="message-card" appearance="outlined">
+					<mat-card-header>
+						<mat-card-title>{{ message.author }}</mat-card-title>
+					</mat-card-header>
+					<mat-card-content>
+						{{ message.content }}
+					</mat-card-content>
+				</mat-card>
+			</div>
+		}
+		<div class="prompt">
+			<mat-form-field>
+				<mat-label>Prompt</mat-label>
+				<textarea matInput required [(ngModel)]="message"></textarea>
+				<button matIconButton matSuffix type="button" (click)="toggleMode()">
+					@if (darkMode) {
+						<mat-icon>dark_mode</mat-icon>
+					} @else {
+						<mat-icon>light_mode</mat-icon>
+					}
+				</button>
+				<button matIconButton matSuffix type="button" (click)="onScroll()">
+					<mat-icon>arrow_circle_down</mat-icon>
+				</button>
+				<button matIconButton matSuffix type="button" (click)="onSend()">
+					<mat-icon>send</mat-icon>
+				</button>
+			</mat-form-field>
+		</div>
+	</mat-card-content>
 </mat-card>
