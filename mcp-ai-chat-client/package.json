@@ -42,6 +42,8 @@
 		"@angular/platform-browser": "^21.2.5",
 		"@angular/router": "^21.2.5",
 		"@eslint/js": "^10.0.1",
+		"@modelcontextprotocol/sdk": "^1.27.1",
+		"openai": "^6.32.0",
 		"rxjs": "~7.8.2",
 		"tslib": "^2.8.1"
 	},

@@ -1,7 +1,9 @@
 import {
 	ChangeDetectionStrategy,
+	ChangeDetectorRef,
 	Component,
 	ElementRef,
+	inject,
 	input,
 	OnInit,
 	output,
@@ -36,6 +38,8 @@ import { MatIcon } from '@angular/material/icon';
 export class Chat implements OnInit {
 	readonly session = input<{ content: string; author: 'User' | 'Bot' | 'Tool' }[]>();
 	readonly chatMessageEvent = output<string>();
+
+	private readonly changeDetector = inject(ChangeDetectorRef);
 
 	protected readonly scrollableElement = viewChild<ElementRef<HTMLDivElement>>('scrollable');
 	protected readonly message: string = '';
@@ -117,6 +121,12 @@ export class Chat implements OnInit {
 
 	onSend() {
 		if (this.message && this.message.length > 0) {
+			this.sessionData.push({
+				content: this.message,
+				author: 'User'
+			});
+			this.changeDetector.detectChanges();
+			this.onScroll();
 			this.chatMessageEvent.emit(this.message);
 		}
 	}
