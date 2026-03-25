@@ -1,27 +1,18 @@
-mat-card.chat-card {
-	position: fixed;
-	top: 10px;
-	bottom: 10px;
-	left: 10px;
-	right: 10px;
-}
-
-mat-card-content.scrollable {
-	overflow: auto;
-}
-
-mat-card.message-card {
-	width: 90%;
-}
-
-mat-form-field {
+div.width-wrapper {
+	height: 100%;
 	width: 100%;
 }
 
-div.prompt {
-	position: sticky;
-	bottom: 0px;
-	margin-top: 10px;
+div.chat-box {
+	display: flex;
+	flex-direction: column;
+	height: inherit;
+	background-color: var(--mat-sys-surface);
+}
+
+div.messages {
+	flex-grow: 1;
+	overflow: auto;
 }
 
 div.message {
@@ -33,4 +24,20 @@ div.message {
 
 div.message.user {
 	justify-content: right;
+}
+
+div.message.user > mat-card.message-card {
+	background-color: var(--mat-sys-surface-container-high);
+}
+
+mat-card.message-card {
+	max-width: 80%;
+}
+
+mat-form-field {
+	width: 100%;
+}
+
+button.action-button {
+	margin: 5px;
 }

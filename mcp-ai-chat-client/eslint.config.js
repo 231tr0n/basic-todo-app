@@ -13,7 +13,8 @@ export default defineConfig([
 		language: 'css/css',
 		extends: [css.configs.recommended],
 		rules: {
-			'css/use-baseline': 'warn'
+			'css/use-baseline': 'warn',
+			'css/no-invalid-properties': ['error', { allowUnknownVariables: true }]
 		}
 	},
 	{

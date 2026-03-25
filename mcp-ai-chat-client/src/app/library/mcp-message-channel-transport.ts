@@ -103,13 +103,16 @@ export class MessageChannelTransport implements Transport {
 		return crypto.randomUUID();
 	}
 
-	static createChannelPair(): [MessageChannelTransport, MessageChannelTransport] {
+	static createChannelPair(): {
+		clientChannel: MessageChannelTransport;
+		serverChannel: MessageChannelTransport;
+	} {
 		const channel = new MessageChannel();
 		const sessionId = MessageChannelTransport.generateSessionId();
 
-		return [
-			new MessageChannelTransport(channel.port1, sessionId),
-			new MessageChannelTransport(channel.port2, sessionId)
-		];
+		return {
+			clientChannel: new MessageChannelTransport(channel.port1, sessionId),
+			serverChannel: new MessageChannelTransport(channel.port2, sessionId)
+		};
 	}
 }
