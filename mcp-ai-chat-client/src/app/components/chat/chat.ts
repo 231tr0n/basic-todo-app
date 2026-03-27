@@ -87,7 +87,8 @@ export class Chat implements OnInit, OnDestroy {
 					}
 				}
 			},
-			implementation: (expression: string) => String(eval(expression))
+			// https://esbuild.github.io/link/direct-eval
+			implementation: (expression: string) => String((0, eval)(expression))
 		}
 	];
 	private readonly mcpClient: Client = new Client({
@@ -211,7 +212,7 @@ export class Chat implements OnInit, OnDestroy {
 				part.message.tool_calls?.forEach((toolCall) => {
 					toolCalls.push(toolCall);
 					this.appendToLastMessage(
-						`\nCalled tool: ${toolCall.function.name} with parameters: ${JSON.stringify(toolCall.function.arguments, null, '  ')}\n`
+						`\nCalled tool ${toolCall.function.name} with parameters\n**${JSON.stringify(toolCall.function.arguments, null, '  ')}**\n`
 					);
 				});
 			}

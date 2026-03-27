@@ -9,10 +9,11 @@
 						</mat-card-header>
 						<mat-card-content>
 							@if (message.role === 'tool') {
-								<pre>{{
-									`${message.role} ${message.tool_name} returned the below output\n**${message.content}**`
-										| titlecase
-								}}</pre>
+								<pre
+									>{{ `${message.role} ${message.tool_name}` | titlecase }} {{
+										`returned the below output\n**${message.content}**`
+									}}</pre
+								>
 							} @else {
 								<pre>{{ message.content }}</pre>
 							}
