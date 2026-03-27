@@ -2,13 +2,20 @@
 	<div class="chat-box">
 		<div #scrollable class="messages">
 			@for (message of sessionData; track message) {
-				<div class="message" [class.user]="message.author === 'User'">
+				<div class="message" [class.user]="message.role === 'user'">
 					<mat-card class="message-card" appearance="outlined">
 						<mat-card-header>
-							<mat-card-title>{{ message.author }}</mat-card-title>
+							<mat-card-title>{{ message.role | titlecase }}</mat-card-title>
 						</mat-card-header>
 						<mat-card-content>
-							{{ message.content }}
+							@if (message.role === 'tool') {
+								<pre>{{
+									`${message.role} ${message.tool_name} returned the below output\n**${message.content}**`
+										| titlecase
+								}}</pre>
+							} @else {
+								<pre>{{ message.content }}</pre>
+							}
 						</mat-card-content>
 					</mat-card>
 				</div>

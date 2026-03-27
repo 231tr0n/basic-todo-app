@@ -56,6 +56,12 @@ export default defineConfig([
 					style: 'kebab-case'
 				}
 			],
+			'@typescript-eslint/no-unnecessary-condition': [
+				'error',
+				{
+					allowConstantLoopConditions: 'only-allowed-literals'
+				}
+			],
 			'@angular-eslint/component-class-suffix': 'off'
 		}
 	},
