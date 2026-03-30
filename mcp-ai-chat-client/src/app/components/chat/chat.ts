@@ -67,7 +67,10 @@ export class Chat implements OnInit, OnDestroy {
 	private readonly changeDetector = inject(ChangeDetectorRef);
 	private readonly snackBar = inject(MatSnackBar);
 
-	private readonly ollamaTools: { tool: Tool; implementation: unknown }[] = [
+	private readonly ollamaTools: {
+		tool: Tool;
+		implementation: (args: unknown[]) => Promise<string>;
+	}[] = [
 		{
 			tool: {
 				type: 'function',
@@ -88,7 +91,14 @@ export class Chat implements OnInit, OnDestroy {
 				}
 			},
 			// https://esbuild.github.io/link/direct-eval
-			implementation: (expression: string) => String((0, eval)(expression))
+			implementation: (args: unknown[]) =>
+				new Promise((resolve, reject) => {
+					try {
+						resolve(String((0, eval)(args[0] as string)));
+					} catch (err: unknown) {
+						reject(err as Error);
+					}
+				})
 		}
 	];
 	private readonly mcpClient: Client = new Client({
@@ -222,8 +232,10 @@ export class Chat implements OnInit, OnDestroy {
 			while (toolCalls.length > 0) {
 				const toolCall = toolCalls.pop();
 				if (toolCall) {
-					this.ollamaTools.forEach((toolWrapper) => {
+					let toolFound = false;
+					for (const toolWrapper of this.ollamaTools) {
 						if (toolWrapper.tool.function.name === toolCall.function.name) {
+							toolFound = true;
 							const args: unknown[] = [];
 							if (toolWrapper.tool.function.parameters) {
 								Object.keys(toolWrapper.tool.function.parameters.properties as object).forEach(
@@ -232,12 +244,22 @@ export class Chat implements OnInit, OnDestroy {
 									}
 								);
 							}
-							const output = (toolWrapper.implementation as (...args: unknown[]) => string)(
-								...args
-							);
-							this.addMessage('tool', output, toolCall.function.name);
+							try {
+								const output: string = await (
+									toolWrapper.implementation as (...args: unknown[]) => Promise<string>
+								)(...args);
+								this.addMessage('tool', output, toolCall.function.name);
+							} catch (e: unknown) {
+								this.addMessage(
+									'tool',
+									`Error running tool: ${(e as Error).message}`,
+									toolCall.function.name
+								);
+							}
+							this.onScroll();
 						}
-					});
+					}
+					if (!toolFound) this.addMessage('tool', 'No such tool found', toolCall.function.name);
 				}
 			}
 		}
@@ -272,7 +294,12 @@ export class Chat implements OnInit, OnDestroy {
 				this.addMessage('user', message);
 				this.onScroll();
 				this.message = '';
-				await this.processMessages();
+				try {
+					await this.processMessages();
+				} catch (err: unknown) {
+					this.handleError('Error connecting mcp client/server instances', true, err);
+				}
+				console.log(this.sessionData);
 			}
 		}
 	}
