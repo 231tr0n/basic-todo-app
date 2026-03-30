@@ -41,3 +41,8 @@ mat-form-field {
 button.action-button {
 	margin: 5px;
 }
+
+pre {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}

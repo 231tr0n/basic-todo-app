@@ -69,7 +69,7 @@ export class Chat implements OnInit, OnDestroy {
 
 	private readonly ollamaTools: {
 		tool: Tool;
-		implementation: (args: unknown[]) => Promise<string>;
+		implementation: (...args: unknown[]) => Promise<string>;
 	}[] = [
 		{
 			tool: {
@@ -91,9 +91,12 @@ export class Chat implements OnInit, OnDestroy {
 				}
 			},
 			// https://esbuild.github.io/link/direct-eval
-			implementation: (args: unknown[]) =>
+			implementation: (...args: unknown[]) =>
 				new Promise((resolve, reject) => {
 					try {
+						if (typeof args[0] !== 'string') {
+							reject(Error('Argument is not a string'));
+						}
 						resolve(String((0, eval)(args[0] as string)));
 					} catch (err: unknown) {
 						reject(err as Error);
@@ -230,7 +233,7 @@ export class Chat implements OnInit, OnDestroy {
 				break;
 			}
 			while (toolCalls.length > 0) {
-				const toolCall = toolCalls.pop();
+				const toolCall = toolCalls.shift();
 				if (toolCall) {
 					let toolFound = false;
 					for (const toolWrapper of this.ollamaTools) {
@@ -245,21 +248,23 @@ export class Chat implements OnInit, OnDestroy {
 								);
 							}
 							try {
-								const output: string = await (
-									toolWrapper.implementation as (...args: unknown[]) => Promise<string>
-								)(...args);
+								const output: string = await toolWrapper.implementation(...args);
 								this.addMessage('tool', output, toolCall.function.name);
+								this.onScroll();
 							} catch (e: unknown) {
 								this.addMessage(
 									'tool',
 									`Error running tool: ${(e as Error).message}`,
 									toolCall.function.name
 								);
+								this.onScroll();
 							}
-							this.onScroll();
 						}
 					}
-					if (!toolFound) this.addMessage('tool', 'No such tool found', toolCall.function.name);
+					if (!toolFound) {
+						this.addMessage('tool', 'No such tool found', toolCall.function.name);
+						this.onScroll();
+					}
 				}
 			}
 		}
@@ -299,7 +304,6 @@ export class Chat implements OnInit, OnDestroy {
 				} catch (err: unknown) {
 					this.handleError('Error connecting mcp client/server instances', true, err);
 				}
-				console.log(this.sessionData);
 			}
 		}
 	}
