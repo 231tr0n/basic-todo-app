@@ -19,9 +19,9 @@ import { MatMiniFabButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { MessageChannelTransport } from '../../library/mcp-message-channel-transport';
 import { TitleCasePipe } from '@angular/common';
+import { MarkdownToHtmlPipe } from '../../pipes/markdown-to-html-pipe';
 import { Ollama, Tool, ToolCall } from 'ollama/browser';
 
 interface SessionMessage {
@@ -47,7 +47,8 @@ interface SessionMessage {
 		MatOption,
 		MatSelect,
 		MatSuffix,
-		TitleCasePipe
+		TitleCasePipe,
+		MarkdownToHtmlPipe
 	],
 	templateUrl: './chat.html',
 	styleUrl: './chat.css',
@@ -69,7 +70,7 @@ export class Chat implements OnInit, OnDestroy {
 
 	private readonly ollamaTools: {
 		tool: Tool;
-		implementation: (...args: unknown[]) => Promise<string>;
+		implementation: (...args: unknown[]) => Promise<string | undefined>;
 	}[] = [
 		{
 			tool: {
@@ -129,24 +130,12 @@ export class Chat implements OnInit, OnDestroy {
 		if (document.body.classList.contains('dark')) {
 			this.darkMode = true;
 		}
-		this.connectMcpClientAndInbuiltMcpServerInstances()
-			.then(async () => {
-				this.availableAiAgentModels = (await this.ollama.list()).models.map((model) => model.name);
-				if (
-					this.selectedAiAgentModel.length === 0 ||
-					this.availableAiAgentModels.filter((value) => value === this.selectedAiAgentModel)
-						.length == 0
-				) {
-					if (this.availableAiAgentModels.length == 0) {
-						this.handleError('No Ai agent models available', true);
-					}
-					this.selectedAiAgentModel = this.availableAiAgentModels[0];
-					this.changeDetector.markForCheck();
-				}
-			})
-			.catch((err: unknown) => {
-				this.handleError('Error connecting mcp client/server instances', true, err);
-			});
+		this.connectMcpClientAndInbuiltMcpServerInstances().catch((err: unknown) => {
+			this.handleError('Error connecting mcp client/server instances', true, err);
+		});
+		this.onRefreshAiAgentModels().catch((err: unknown) => {
+			this.handleError('Error with AI agent', true, err);
+		});
 	}
 
 	ngOnDestroy() {
@@ -155,10 +144,14 @@ export class Chat implements OnInit, OnDestroy {
 		});
 	}
 
-	handleError(message: string, throwError: boolean, err?: unknown) {
+	private handleError(message: string, throwError: boolean, err?: unknown) {
 		this.chatInputDisabled = true;
 		this.changeDetector.markForCheck();
-		this.snackBar.open(message, 'Close', {
+		let snackBarMessage = message;
+		if (err instanceof Error) {
+			snackBarMessage += `: ${err.message}`;
+		}
+		this.snackBar.open(snackBarMessage, 'Close', {
 			duration: this.snackBarDuration()
 		});
 		console.log(message, err);
@@ -167,47 +160,22 @@ export class Chat implements OnInit, OnDestroy {
 		}
 	}
 
-	registerInbuiltMcpServerTools() {
+	private registerInbuiltMcpServerTools() {
 		// this.mcpServer.registerTool();
 	}
 
-	async connectMcpClientAndInbuiltMcpServerInstances() {
+	private async connectMcpClientAndInbuiltMcpServerInstances() {
 		this.registerInbuiltMcpServerTools();
 		await this.mcpServer.connect(this.transports.serverChannel);
 		await this.mcpClient.connect(this.transports.clientChannel);
 	}
 
-	async closeMcpClientAndInbuiltMcpServerInstances() {
+	private async closeMcpClientAndInbuiltMcpServerInstances() {
 		await this.mcpClient.close();
 		await this.mcpServer.close();
 	}
 
-	async connectMcpClientToExternalServer(transport: Transport) {
-		await this.mcpClient.connect(transport);
-	}
-
-	toggleMode() {
-		if (document.body.classList.contains('dark')) {
-			document.body.classList.remove('dark');
-			this.darkMode = false;
-		} else {
-			document.body.classList.add('dark');
-			this.darkMode = true;
-		}
-	}
-
-	onScroll() {
-		const element = this.scrollableElement()?.nativeElement;
-		if (element) {
-			element.scrollTo({
-				top: element.scrollHeight,
-				behavior: 'smooth'
-			});
-			this.changeDetector.markForCheck();
-		}
-	}
-
-	async processMessages() {
+	private async processMessages() {
 		this.chatInputDisabled = true;
 		const toolCalls: ToolCall[] = [];
 		while (true) {
@@ -225,13 +193,14 @@ export class Chat implements OnInit, OnDestroy {
 				part.message.tool_calls?.forEach((toolCall) => {
 					toolCalls.push(toolCall);
 					this.appendToLastMessage(
-						`\nCalled tool ${toolCall.function.name} with parameters\n**${JSON.stringify(toolCall.function.arguments, null, '  ')}**\n`
+						`\nCalled tool ${toolCall.function.name} with parameters\n\`\`\`json\n${JSON.stringify(toolCall.function.arguments, null, '  ')}\n\`\`\`\n`
 					);
 				});
 			}
 			if (toolCalls.length === 0) {
 				break;
 			}
+			let toolOutputFound = false;
 			while (toolCalls.length > 0) {
 				const toolCall = toolCalls.shift();
 				if (toolCall) {
@@ -248,10 +217,14 @@ export class Chat implements OnInit, OnDestroy {
 								);
 							}
 							try {
-								const output: string = await toolWrapper.implementation(...args);
-								this.addMessage('tool', output, toolCall.function.name);
-								this.onScroll();
+								const output = await toolWrapper.implementation(...args);
+								if (output) {
+									toolOutputFound = true;
+									this.addMessage('tool', output, toolCall.function.name);
+									this.onScroll();
+								}
 							} catch (e: unknown) {
+								toolOutputFound = true;
 								this.addMessage(
 									'tool',
 									`Error running tool: ${(e as Error).message}`,
@@ -262,20 +235,24 @@ export class Chat implements OnInit, OnDestroy {
 						}
 					}
 					if (!toolFound) {
+						toolOutputFound = true;
 						this.addMessage('tool', 'No such tool found', toolCall.function.name);
 						this.onScroll();
 					}
 				}
 			}
+			if (!toolOutputFound) {
+				break;
+			}
 		}
 		this.chatInputDisabled = false;
 	}
 
-	onClear() {
-		this.sessionData.length = 0;
-	}
-
-	addMessage(role: 'user' | 'system' | 'assistant' | 'tool', content: string, tool_name?: string) {
+	private addMessage(
+		role: 'user' | 'system' | 'assistant' | 'tool',
+		content: string,
+		tool_name?: string
+	) {
 		const message: SessionMessage = {
 			role,
 			content: content.trim()
@@ -286,13 +263,57 @@ export class Chat implements OnInit, OnDestroy {
 		this.sessionData = [...this.sessionData, message];
 	}
 
-	appendToLastMessage(content: string) {
+	private appendToLastMessage(content: string) {
 		this.sessionData[this.sessionData.length - 1].content += content;
 		this.sessionData[this.sessionData.length - 1].content =
 			this.sessionData[this.sessionData.length - 1].content.trim();
 	}
 
-	async onSend() {
+	protected async onRefreshAiAgentModels(event?: MouseEvent) {
+		if (event) event.stopPropagation();
+		this.availableAiAgentModels = (await this.ollama.list()).models.map((model) => model.name);
+		if (this.availableAiAgentModels.length == 0) {
+			throw new Error('No AI agent models found');
+		}
+		if (
+			this.selectedAiAgentModel.length === 0 ||
+			this.availableAiAgentModels.filter((value) => value === this.selectedAiAgentModel).length == 0
+		) {
+			this.selectedAiAgentModel = this.availableAiAgentModels[0];
+			this.changeDetector.markForCheck();
+		}
+	}
+
+	protected onToggleMode(event?: MouseEvent) {
+		if (event) event.stopPropagation();
+		if (document.body.classList.contains('dark')) {
+			document.body.classList.remove('dark');
+			this.darkMode = false;
+		} else {
+			document.body.classList.add('dark');
+			this.darkMode = true;
+		}
+	}
+
+	protected onScroll(event?: MouseEvent) {
+		if (event) event.stopPropagation();
+		const element = this.scrollableElement()?.nativeElement;
+		if (element) {
+			element.scrollTo({
+				top: element.scrollHeight,
+				behavior: 'smooth'
+			});
+			this.changeDetector.markForCheck();
+		}
+	}
+
+	protected onClear(event?: MouseEvent) {
+		if (event) event.stopPropagation();
+		this.sessionData.length = 0;
+	}
+
+	protected async onSend(event?: MouseEvent) {
+		if (event) event.stopPropagation();
 		if (!this.chatInputDisabled && this.message) {
 			const message = this.message.trim();
 			if (message.length > 0) {
@@ -302,7 +323,7 @@ export class Chat implements OnInit, OnDestroy {
 				try {
 					await this.processMessages();
 				} catch (err: unknown) {
-					this.handleError('Error connecting mcp client/server instances', true, err);
+					this.handleError('Error processing messages', true, err);
 				}
 			}
 		}

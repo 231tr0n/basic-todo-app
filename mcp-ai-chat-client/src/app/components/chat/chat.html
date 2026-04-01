@@ -5,18 +5,12 @@
 				<div class="message" [class.user]="message.role === 'user'">
 					<mat-card class="message-card" appearance="outlined">
 						<mat-card-header>
-							<mat-card-title>{{ message.role | titlecase }}</mat-card-title>
+							<mat-card-title>
+								{{ message.role | titlecase }} {{ message.tool_name | titlecase }}
+							</mat-card-title>
 						</mat-card-header>
 						<mat-card-content>
-							@if (message.role === 'tool') {
-								<pre
-									>{{ `${message.role} ${message.tool_name}` | titlecase }} {{
-										`returned the below output\n**${message.content}**`
-									}}</pre
-								>
-							} @else {
-								<pre>{{ message.content }}</pre>
-							}
+							<div [innerHTML]="message.content | markdownToHtml"></div>
 						</mat-card-content>
 					</mat-card>
 				</div>
@@ -29,6 +23,14 @@
 					<mat-option [value]="model">{{ model }}</mat-option>
 				}
 			</mat-select>
+			<button
+				matMiniFab
+				matSuffix
+				class="action-button"
+				type="button"
+				(click)="onRefreshAiAgentModels($event)">
+				<mat-icon>refresh</mat-icon>
+			</button>
 		</mat-form-field>
 		<mat-form-field subscriptSizing="dynamic">
 			<mat-label>Prompt</mat-label>
@@ -39,7 +41,12 @@
 				[cdkAutosizeMaxRows]="currentMaxTextAreaSize"
 				[disabled]="chatInputDisabled"
 				[(ngModel)]="message"></textarea>
-			<button matMiniFab matSuffix class="action-button" type="button" (click)="toggleMode()">
+			<button
+				matMiniFab
+				matSuffix
+				class="action-button"
+				type="button"
+				(click)="onToggleMode($event)">
 				@if (darkMode) {
 					<mat-icon>dark_mode</mat-icon>
 				} @else {
@@ -52,10 +59,10 @@
 				type="button"
 				class="action-button"
 				[disabled]="chatInputDisabled"
-				(click)="onClear()">
+				(click)="onClear($event)">
 				<mat-icon>delete</mat-icon>
 			</button>
-			<button matMiniFab matSuffix class="action-button" type="button" (click)="onScroll()">
+			<button matMiniFab matSuffix class="action-button" type="button" (click)="onScroll($event)">
 				<mat-icon>arrow_circle_down</mat-icon>
 			</button>
 			<button
@@ -64,7 +71,7 @@
 				type="button"
 				class="action-button"
 				[disabled]="chatInputDisabled"
-				(click)="onSend()">
+				(click)="onSend($event)">
 				<mat-icon>send</mat-icon>
 			</button>
 		</mat-form-field>

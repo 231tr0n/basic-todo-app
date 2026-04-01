@@ -1,6 +1,8 @@
 @use '@angular/material' as mat;
+@use 'sass:meta';
 
 body {
+	@include meta.load-css('highlight.js/styles/base16/papercolor-light');
 	@include mat.theme(
 		(
 			color: (
@@ -21,6 +23,7 @@ body {
 }
 
 body.dark {
+	@include meta.load-css('highlight.js/styles/base16/papercolor-dark');
 	@include mat.theme(
 		(
 			color: (
