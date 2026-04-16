@@ -76,9 +76,9 @@ export class Chat implements OnInit, OnDestroy {
 			tool: {
 				type: 'function',
 				function: {
-					name: 'eval',
+					name: 'eval_javascript',
 					description:
-						'Evaluate a javascript expression and return its result. It can also be used to evaluate mathematical expressions.',
+						'Evaluate a javascript expression and return its result. It can also be used to evaluate mathematical expressions. It returns a string if the evaluation is successful or an error message otherwise.',
 					parameters: {
 						type: 'object',
 						properties: {
@@ -95,6 +95,9 @@ export class Chat implements OnInit, OnDestroy {
 			implementation: (...args: unknown[]) =>
 				new Promise((resolve, reject) => {
 					try {
+						if (args.length !== 1) {
+							reject(Error('One argument is expected'));
+						}
 						if (typeof args[0] !== 'string') {
 							reject(Error('Argument is not a string'));
 						}
