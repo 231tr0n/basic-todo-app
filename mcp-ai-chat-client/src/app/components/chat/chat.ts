@@ -64,6 +64,7 @@ export class Chat implements OnInit, OnDestroy {
 	readonly maxTextAreaSize = input(10);
 	readonly snackBarDuration = input(5000);
 	readonly ollamaHost = input('http://localhost:11434');
+	readonly aiHostApiKey = input('TEMP');
 
 	private readonly changeDetector = inject(ChangeDetectorRef);
 	private readonly snackBar = inject(MatSnackBar);
@@ -117,7 +118,12 @@ export class Chat implements OnInit, OnDestroy {
 		version: this.mcpServerVersion()
 	});
 	private readonly transports = MessageChannelTransport.createChannelPair();
-	private readonly ollama = new Ollama({ host: this.ollamaHost() });
+	private readonly ollama = new Ollama({
+		host: this.ollamaHost(),
+		headers: {
+			Authorization: `Bearer ${this.aiHostApiKey()}`
+		}
+	});
 
 	protected readonly scrollableElement = viewChild<ElementRef<HTMLDivElement>>('scrollable');
 
