@@ -6,11 +6,12 @@
 					<mat-card class="message-card" appearance="outlined">
 						<mat-card-header>
 							<mat-card-title>
-								{{ message.role | titlecase }} {{ message.tool_name | titlecase }}
+								{{ message.role | titlecase }}
 							</mat-card-title>
 						</mat-card-header>
 						<mat-card-content>
-							<div [innerHTML]="message.content | markdownToHtml"></div>
+							<div [innerHTML]="message | chatCompletionMessageParamMarkdownToHtml"></div>
+							<div [innerHTML]="message | chatCompletionMessageToolCallToMarkdownHtmlPipe"></div>
 						</mat-card-content>
 					</mat-card>
 				</div>

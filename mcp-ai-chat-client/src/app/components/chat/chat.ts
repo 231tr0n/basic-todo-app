@@ -21,14 +21,15 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { MessageChannelTransport } from '../../library/mcp-message-channel-transport';
 import { TitleCasePipe } from '@angular/common';
-import { MarkdownToHtmlPipe } from '../../pipes/markdown-to-html-pipe';
-import { Ollama, Tool, ToolCall } from 'ollama/browser';
-
-interface SessionMessage {
-	content: string;
-	role: 'user' | 'system' | 'assistant' | 'tool';
-	tool_name?: string;
-}
+import { ChatCompletionMessageParamMarkdownToHtmlPipe } from '../../pipes/chat-completion-message-param-markdown-to-html-pipe';
+import { OpenAI } from 'openai';
+import type {
+	ChatCompletionMessageParam,
+	ChatCompletionAssistantMessageParam,
+	ChatCompletionMessageToolCall,
+	ChatCompletionFunctionTool
+} from 'openai/resources/chat/completions';
+import { ChatCompletionMessageToolCallToMarkdownHtmlPipePipe } from '../../pipes/chat-completion-message-tool-call-to-markdown-html-pipe-pipe';
 
 @Component({
 	selector: 'app-home',
@@ -48,14 +49,14 @@ interface SessionMessage {
 		MatSelect,
 		MatSuffix,
 		TitleCasePipe,
-		MarkdownToHtmlPipe
+		ChatCompletionMessageParamMarkdownToHtmlPipe,
+		ChatCompletionMessageToolCallToMarkdownHtmlPipePipe
 	],
 	templateUrl: './chat.html',
 	styleUrl: './chat.css',
 	changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Chat implements OnInit, OnDestroy {
-	readonly session = input<SessionMessage[]>([]);
 	readonly mcpClientName = input('Ai-MCP-Client');
 	readonly mcpClientVersion = input('1.0.0');
 	readonly mcpServerName = input('Ai-MCP-Server');
@@ -63,14 +64,14 @@ export class Chat implements OnInit, OnDestroy {
 	readonly aiAgentModel = input('');
 	readonly maxTextAreaSize = input(10);
 	readonly snackBarDuration = input(5000);
-	readonly ollamaHost = input('http://localhost:11434');
-	readonly aiHostApiKey = input('TEMP');
+	readonly openaiBaseUrl = input('http://localhost:11434/v1');
+	readonly openaiApiKey = input('TEMP');
 
 	private readonly changeDetector = inject(ChangeDetectorRef);
 	private readonly snackBar = inject(MatSnackBar);
 
-	private readonly ollamaTools: {
-		tool: Tool;
+	private readonly openaiTools: {
+		tool: ChatCompletionFunctionTool;
 		implementation: (...args: unknown[]) => Promise<string | undefined>;
 	}[] = [
 		{
@@ -89,7 +90,8 @@ export class Chat implements OnInit, OnDestroy {
 							}
 						},
 						required: ['expression']
-					}
+					},
+					strict: true
 				}
 			},
 			// https://esbuild.github.io/link/direct-eval
@@ -118,16 +120,15 @@ export class Chat implements OnInit, OnDestroy {
 		version: this.mcpServerVersion()
 	});
 	private readonly transports = MessageChannelTransport.createChannelPair();
-	private readonly ollama = new Ollama({
-		host: this.ollamaHost(),
-		headers: {
-			Authorization: `Bearer ${this.aiHostApiKey()}`
-		}
+	private readonly openai = new OpenAI({
+		baseURL: this.openaiBaseUrl(),
+		apiKey: this.openaiApiKey(),
+		dangerouslyAllowBrowser: true
 	});
 
 	protected readonly scrollableElement = viewChild<ElementRef<HTMLDivElement>>('scrollable');
 
-	protected sessionData: SessionMessage[] = this.session();
+	protected sessionData: ChatCompletionMessageParam[] = [];
 	protected message = '';
 	protected darkMode = false;
 	protected availableAiAgentModels: string[] = [];
@@ -145,6 +146,7 @@ export class Chat implements OnInit, OnDestroy {
 		this.onRefreshAiAgentModels().catch((err: unknown) => {
 			this.handleError('Error with AI agent', true, err);
 		});
+		this.onClear();
 	}
 
 	ngOnDestroy() {
@@ -186,101 +188,110 @@ export class Chat implements OnInit, OnDestroy {
 
 	private async processMessages() {
 		this.chatInputDisabled = true;
-		const toolCalls: ToolCall[] = [];
+		const toolCalls: ChatCompletionMessageToolCall[] = [];
 		while (true) {
-			const response = await this.ollama.chat({
+			const response = await this.openai.chat.completions.create({
 				model: this.selectedAiAgentModel,
 				messages: this.sessionData,
-				tools: this.ollamaTools.map((tool) => tool.tool),
-				stream: true
+				tools: this.openaiTools.map((tool) => tool.tool)
 			});
-			this.addMessage('assistant', '');
+			const assistantMessage = response.choices[0].message;
+			this.addAssistantMessage(assistantMessage);
 			this.onScroll();
-			for await (const part of response) {
-				this.appendToLastMessage(part.message.content);
-				this.onScroll();
-				part.message.tool_calls?.forEach((toolCall) => {
+			if (assistantMessage.tool_calls) {
+				assistantMessage.tool_calls.forEach((toolCall) => {
 					toolCalls.push(toolCall);
-					this.appendToLastMessage(
-						`\nCalled tool ${toolCall.function.name} with parameters\n\`\`\`json\n${JSON.stringify(toolCall.function.arguments, null, '  ')}\n\`\`\`\n`
-					);
 				});
 			}
 			if (toolCalls.length === 0) {
 				break;
 			}
-			let toolOutputFound = false;
 			while (toolCalls.length > 0) {
 				const toolCall = toolCalls.shift();
 				if (toolCall) {
 					let toolFound = false;
-					for (const toolWrapper of this.ollamaTools) {
+					for (const toolWrapper of this.openaiTools) {
+						if (toolCall.type !== 'function') continue;
 						if (toolWrapper.tool.function.name === toolCall.function.name) {
 							toolFound = true;
-							const args: unknown[] = [];
-							if (toolWrapper.tool.function.parameters) {
-								Object.keys(toolWrapper.tool.function.parameters.properties as object).forEach(
-									(key) => {
-										args.push(toolCall.function.arguments[key]);
-									}
-								);
-							}
 							try {
-								const output = await toolWrapper.implementation(...args);
-								if (output) {
-									toolOutputFound = true;
-									this.addMessage('tool', output, toolCall.function.name);
+								const args: unknown[] = [];
+								if (toolWrapper.tool.function.parameters) {
+									const argumentsObj = JSON.parse(toolCall.function.arguments) as Record<
+										string,
+										string
+									>;
+									Object.keys(toolWrapper.tool.function.parameters['properties'] as object).forEach(
+										(key) => {
+											args.push(argumentsObj[key]);
+										}
+									);
+								}
+								try {
+									const output = await toolWrapper.implementation(...args);
+									this.addToolMessage(toolCall.id, output ?? '');
+									this.onScroll();
+								} catch (e: unknown) {
+									this.addToolMessage(toolCall.id, `Error running tool: ${(e as Error).message}`);
 									this.onScroll();
 								}
 							} catch (e: unknown) {
-								toolOutputFound = true;
-								this.addMessage(
-									'tool',
-									`Error running tool: ${(e as Error).message}`,
-									toolCall.function.name
+								this.addToolMessage(
+									toolCall.id,
+									`Error parsing parameters for tool: ${(e as Error).message}`
 								);
 								this.onScroll();
 							}
 						}
 					}
 					if (!toolFound) {
-						toolOutputFound = true;
-						this.addMessage('tool', 'No such tool found', toolCall.function.name);
+						this.addToolMessage(toolCall.id, 'No such tool found');
 						this.onScroll();
 					}
 				}
-			}
-			if (!toolOutputFound) {
-				break;
 			}
 		}
 		this.chatInputDisabled = false;
 	}
 
-	private addMessage(
-		role: 'user' | 'system' | 'assistant' | 'tool',
-		content: string,
-		tool_name?: string
-	) {
-		const message: SessionMessage = {
-			role,
-			content: content.trim()
-		};
-		if (tool_name) {
-			message.tool_name = tool_name;
-		}
+	private addAssistantMessage(message: ChatCompletionAssistantMessageParam) {
 		this.sessionData = [...this.sessionData, message];
 	}
 
-	private appendToLastMessage(content: string) {
-		this.sessionData[this.sessionData.length - 1].content += content;
-		this.sessionData[this.sessionData.length - 1].content =
-			this.sessionData[this.sessionData.length - 1].content.trim();
+	private addUserMessage(content: string) {
+		this.sessionData = [
+			...this.sessionData,
+			{
+				role: 'user',
+				content: content.trim()
+			}
+		];
+	}
+
+	private addDeveloperMessage(content: string) {
+		this.sessionData = [
+			...this.sessionData,
+			{
+				role: 'developer',
+				content: content.trim()
+			}
+		];
+	}
+
+	private addToolMessage(tool_call_id: string, content: string) {
+		this.sessionData = [
+			...this.sessionData,
+			{
+				role: 'tool',
+				tool_call_id,
+				content: content
+			}
+		];
 	}
 
 	protected async onRefreshAiAgentModels(event?: MouseEvent) {
 		if (event) event.stopPropagation();
-		this.availableAiAgentModels = (await this.ollama.list()).models.map((model) => model.name);
+		this.availableAiAgentModels = (await this.openai.models.list()).data.map((model) => model.id);
 		if (this.availableAiAgentModels.length == 0) {
 			throw new Error('No AI agent models found');
 		}
@@ -319,6 +330,9 @@ export class Chat implements OnInit, OnDestroy {
 	protected onClear(event?: MouseEvent) {
 		if (event) event.stopPropagation();
 		this.sessionData.length = 0;
+		this.addDeveloperMessage(
+			'You are a chatbot assistant which makes use of provided tools to assist user with any questions they ask. Reply in markdown format when answering.'
+		);
 	}
 
 	protected async onSend(event?: MouseEvent) {
@@ -326,7 +340,7 @@ export class Chat implements OnInit, OnDestroy {
 		if (!this.chatInputDisabled && this.message) {
 			const message = this.message.trim();
 			if (message.length > 0) {
-				this.addMessage('user', message);
+				this.addUserMessage(message);
 				this.onScroll();
 				this.message = '';
 				try {
