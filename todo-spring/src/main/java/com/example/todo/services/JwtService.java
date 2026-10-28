@@ -2,20 +2,17 @@ package com.example.todo.services;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.example.todo.configurations.TodoConfigurationProperties;
 import java.time.Instant;
 import lombok.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
-  private final int expiry;
-  private final String secret;
+  private final TodoConfigurationProperties.Jwt jwtConfiguration;
 
-  public JwtService(
-      @Value("${jwt.expiry}") int expiry, @Value("${jwt.secret}") @NonNull String secret) {
-    this.expiry = expiry;
-    this.secret = secret;
+  public JwtService(TodoConfigurationProperties configurationProperties) {
+    this.jwtConfiguration = configurationProperties.getJwt();
   }
 
   public String generateJwt(@NonNull String username) {
@@ -23,11 +20,14 @@ public class JwtService {
     return JWT.create()
         .withSubject(username)
         .withIssuedAt(now)
-        .withExpiresAt(now.plusSeconds(expiry))
-        .sign(Algorithm.HMAC512(secret));
+        .withExpiresAt(now.plusSeconds(jwtConfiguration.getExpiry()))
+        .sign(Algorithm.HMAC512(jwtConfiguration.getSecret()));
   }
 
   public String decodeJwt(@NonNull String token) {
-    return JWT.require(Algorithm.HMAC512(secret)).build().verify(token).getSubject();
+    return JWT.require(Algorithm.HMAC512(jwtConfiguration.getSecret()))
+        .build()
+        .verify(token)
+        .getSubject();
   }
 }

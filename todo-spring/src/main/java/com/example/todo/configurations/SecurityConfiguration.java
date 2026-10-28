@@ -3,7 +3,6 @@ package com.example.todo.configurations;
 import com.example.todo.components.JwtAuthenticationFilterComponent;
 import com.example.todo.constants.Constants;
 import com.example.todo.repositories.UserRepository;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfiguration {
   private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
   private final UserRepository userRepository;
+  private final TodoConfigurationProperties configurationProperties;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -56,8 +56,11 @@ public class SecurityConfiguration {
 
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
+    TodoConfigurationProperties.Cors corsConfiguration = configurationProperties.getCors();
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
+    configuration.setAllowedOrigins(corsConfiguration.getAllowedOrigins());
+    configuration.setAllowedMethods(corsConfiguration.getAllowedMethods());
+    configuration.setAllowedHeaders(corsConfiguration.getAllowedHeaders());
     configuration.setAllowCredentials(true);
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

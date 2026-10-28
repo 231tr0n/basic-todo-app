@@ -1,11 +1,11 @@
 package com.example.todo.services;
 
+import com.example.todo.configurations.TodoConfigurationProperties;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Optional;
 import lombok.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
@@ -13,24 +13,21 @@ import org.springframework.web.util.WebUtils;
 
 @Service
 public class SessionCookieService {
-  private final String sessionCookieName;
+  private final TodoConfigurationProperties.Cookie cookieConfiguration;
   private final int expiry;
 
-  public SessionCookieService(
-      @NonNull @Value("${cookie.name:token}") String sessionCookieName,
-      @Value("${jwt.expiry}") int expiry) {
-    this.sessionCookieName = sessionCookieName;
-    this.expiry = expiry;
+  public SessionCookieService(TodoConfigurationProperties configurationProperties) {
+    this.cookieConfiguration = configurationProperties.getCookie();
+    this.expiry = configurationProperties.getJwt().getExpiry();
   }
 
   private ResponseCookie createSessionCookie(@NonNull String value, int expiry) {
-    return ResponseCookie.from(sessionCookieName, value)
-        .httpOnly(true)
-        .path("/")
+    return ResponseCookie.from(cookieConfiguration.getName(), value)
+        .httpOnly(cookieConfiguration.isHttpOnly())
+        .path(cookieConfiguration.getPath())
         .maxAge(expiry)
-        .sameSite("Strict")
-        .httpOnly(true)
-        .secure(false)
+        .sameSite(cookieConfiguration.getSameSite())
+        .secure(cookieConfiguration.isSecure())
         .build();
   }
 
@@ -43,6 +40,6 @@ public class SessionCookieService {
   }
 
   public Optional<Cookie> getSessionCookie(@NonNull HttpServletRequest request) {
-    return Optional.ofNullable(WebUtils.getCookie(request, sessionCookieName));
+    return Optional.ofNullable(WebUtils.getCookie(request, cookieConfiguration.getName()));
   }
 }
