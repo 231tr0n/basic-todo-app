@@ -138,7 +138,7 @@
 
 .parameter-table td {
 	border-top: 1px solid var(--mat-sys-outline-variant);
-	padding: 6px 16px 6px 0;
+	padding: 6px 16px 6px 12px;
 	vertical-align: top;
 }
 
