@@ -65,6 +65,13 @@
 	overflow-wrap: anywhere;
 }
 
+/* Every tool row gets vertical breathing room; Material only pads cells
+   horizontally by default, so the rows hug their content tightly. */
+.tool-table .mat-mdc-cell {
+	padding-bottom: 12px;
+	padding-top: 12px;
+}
+
 /* Filled header bands mark the column headers above the striped rows. */
 .mat-column-server.mat-mdc-header-cell,
 .mat-column-tool.mat-mdc-header-cell,
