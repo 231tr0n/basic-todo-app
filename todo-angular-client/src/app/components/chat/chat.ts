@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
+import { MatCheckbox } from '@angular/material/checkbox';
 import { MatFormField, MatLabel, MatOption, MatSelect, MatSuffix } from '@angular/material/select';
 import { CdkTextareaAutosize } from '@angular/cdk/text-field';
 import { MatInput } from '@angular/material/input';
@@ -33,6 +34,7 @@ import { ChatCompletionMessageToolCallToMarkdownHtmlPipePipe } from '../../pipes
 		MatCardContent,
 		MatCardHeader,
 		MatCardTitle,
+		MatCheckbox,
 		MatFormField,
 		MatIcon,
 		MatMiniFabButton,
@@ -63,7 +65,19 @@ export class Chat implements OnInit, OnDestroy {
 	protected availableAiAgentModels: string[] = [];
 	protected selectedAiAgentModel = this.configuration.defaultAiModel;
 	protected chatInputDisabled = false;
+	protected debugMode = false;
 	protected readonly currentMaxTextAreaSize = this.configuration.maxTextAreaRows;
+
+	protected get visibleMessages(): ChatCompletionMessageParam[] {
+		if (this.debugMode) return this.sessionData;
+		return this.sessionData.filter((message) => {
+			if (message.role === 'system' || message.role === 'tool') return false;
+			if (message.role === 'assistant') {
+				return typeof message.content === 'string' && message.content.length > 0;
+			}
+			return true;
+		});
+	}
 
 	private destroyed = false;
 	private loadingModels = false;

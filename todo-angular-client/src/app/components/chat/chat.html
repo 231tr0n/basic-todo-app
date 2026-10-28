@@ -4,23 +4,26 @@
 			<h1>Assistant</h1>
 			<p>Ask the assistant to manage your board, or answer its questions in the dialogs.</p>
 		</div>
-		<mat-form-field subscriptSizing="dynamic" class="model-picker">
-			<mat-label>Model</mat-label>
-			<mat-select [disabled]="chatInputDisabled" [(ngModel)]="selectedAiAgentModel">
-				@for (model of availableAiAgentModels; track model) {
-					<mat-option [value]="model">{{ model }}</mat-option>
-				}
-			</mat-select>
-			<button
-				matMiniFab
-				matSuffix
-				class="action-button"
-				type="button"
-				[disabled]="chatInputDisabled"
-				(click)="onRefreshAiAgentModels($event)">
-				<mat-icon>refresh</mat-icon>
-			</button>
-		</mat-form-field>
+		<div class="chat-controls">
+			<mat-checkbox [(ngModel)]="debugMode">Debug mode</mat-checkbox>
+			<mat-form-field subscriptSizing="dynamic" class="model-picker">
+				<mat-label>Model</mat-label>
+				<mat-select [disabled]="chatInputDisabled" [(ngModel)]="selectedAiAgentModel">
+					@for (model of availableAiAgentModels; track model) {
+						<mat-option [value]="model">{{ model }}</mat-option>
+					}
+				</mat-select>
+				<button
+					matMiniFab
+					matSuffix
+					class="action-button"
+					type="button"
+					[disabled]="chatInputDisabled"
+					(click)="onRefreshAiAgentModels($event)">
+					<mat-icon>refresh</mat-icon>
+				</button>
+			</mat-form-field>
+		</div>
 	</header>
 
 	<div class="chat-box">
@@ -35,7 +38,7 @@
 					</p>
 				</div>
 			}
-			@for (message of sessionData; track message) {
+			@for (message of visibleMessages; track message) {
 				<div class="message" [class.user]="message.role === 'user'">
 					<mat-card class="message-card" appearance="outlined">
 						<mat-card-header>
@@ -48,7 +51,9 @@
 						</mat-card-header>
 						<mat-card-content>
 							<div [innerHTML]="message | chatCompletionMessageParamMarkdownToHtml"></div>
-							<div [innerHTML]="message | chatCompletionMessageToolCallToMarkdownHtmlPipe"></div>
+							@if (debugMode) {
+								<div [innerHTML]="message | chatCompletionMessageToolCallToMarkdownHtmlPipe"></div>
+							}
 						</mat-card-content>
 					</mat-card>
 				</div>

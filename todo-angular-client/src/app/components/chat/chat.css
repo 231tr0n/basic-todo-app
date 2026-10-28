@@ -35,6 +35,14 @@
 	width: 260px;
 }
 
+.chat-controls {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	justify-content: flex-end;
+}
+
 .chat-box {
 	background: var(--mat-sys-surface-container-low);
 	border-radius: 16px;

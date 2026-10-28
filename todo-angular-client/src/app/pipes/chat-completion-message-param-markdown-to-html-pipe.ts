@@ -21,8 +21,7 @@ export class ChatCompletionMessageParamMarkdownToHtmlPipe implements PipeTransfo
 	);
 
 	transform(value: ChatCompletionMessageParam): string {
-		const content =
-			typeof value.content === 'string' ? value.content : JSON.stringify(value, null, 2);
-		return DOMPurify.sanitize(this.marked.parse(content) as string);
+		if (typeof value.content !== 'string') return '';
+		return DOMPurify.sanitize(this.marked.parse(value.content) as string);
 	}
 }
