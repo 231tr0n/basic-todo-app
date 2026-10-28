@@ -5,10 +5,16 @@
 	width: 100%;
 }
 
+/* One shared column template: the filter row and the table use identical
+   proportions so each filter box sits above its matching column. */
 .catalog-filters {
 	display: grid;
-	gap: 8px;
-	grid-template-columns: repeat(4, minmax(0, 1fr));
+	grid-template-columns: 18% 24% 22% 36%;
+}
+
+.catalog-filters mat-form-field {
+	box-sizing: border-box;
+	padding: 0 8px;
 }
 
 .server-group h3 {
@@ -33,12 +39,29 @@
 
 .tool-table {
 	min-width: 680px;
+	table-layout: fixed;
 	width: 100%;
 }
 
 .tool-table code {
 	font: var(--mat-sys-body-small);
 	overflow-wrap: anywhere;
+}
+
+.mat-column-server {
+	width: 18%;
+}
+
+.mat-column-tool {
+	width: 24%;
+}
+
+.mat-column-description {
+	width: 22%;
+}
+
+.mat-column-parameters {
+	width: 36%;
 }
 
 .parameter-table {
@@ -94,17 +117,15 @@
 	text-align: center;
 }
 
-@media (width <= 900px) {
+@media (width <= 700px) {
+	/* Below the table's minimum width the filters stack vertically instead of
+	   pretending to match columns that scroll horizontally. */
 	.catalog-filters {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: 1fr;
 	}
 }
 
 @media (width <= 600px) {
-	.catalog-filters {
-		grid-template-columns: 1fr;
-	}
-
 	.tool-table {
 		min-width: 520px;
 	}
