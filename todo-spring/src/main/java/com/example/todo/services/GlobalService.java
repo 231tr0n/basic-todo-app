@@ -19,6 +19,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -185,37 +186,37 @@ public class GlobalService {
           long userId,
       @McpToolParam(description = "The new username and/or authorities.", required = true) @Valid
           UpdateUserDto updateUserDto) {
-    if (updateUserDto.getUsername().isEmpty() && updateUserDto.getAuthorities().isEmpty()) {
+    if (updateUserDto.getUsername() == null && updateUserDto.getAuthorities() == null) {
       throw new IllegalArgumentException(
           "One of username or authorities must be provided for updateUser operation");
     }
     UserEntity user = getUser(userId);
-    updateUserDto
-        .getUsername()
-        .ifPresent(
-            (username) -> {
-              if (!username.equals(user.getUsername())) {
-                notExistsUsernameOrThrow(username);
-                user.setUsername(username);
-                userRepository.save(user);
-              }
-            });
-    updateUserDto
-        .getAuthorities()
-        .ifPresent(
-            (authorities) -> {
-              if (!authorities.equals(
-                  user.getAuthorities().stream()
-                      .map(AuthorityEntity::getAuthority)
-                      .collect(Collectors.toSet()))) {
-                authorityRepository.deleteAllByUserId(user.getId());
-                for (String authority : authorities) {
-                  AuthorityEntity authorityEntity =
-                      AuthorityEntity.builder().authority(authority).user(user).build();
-                  authorityRepository.save(authorityEntity);
-                }
-              }
-            });
+    String username = updateUserDto.getUsername();
+    if (username != null && !username.equals(user.getUsername())) {
+      notExistsUsernameOrThrow(username);
+      user.setUsername(username);
+      userRepository.save(user);
+    }
+    Set<String> authorities = updateUserDto.getAuthorities();
+    if (authorities != null
+        && !authorities.equals(
+            user.getAuthorities().stream()
+                .map(AuthorityEntity::getAuthority)
+                .collect(Collectors.toSet()))) {
+      authorityRepository.deleteAllByUserId(user.getId());
+      for (String authority : authorities) {
+        AuthorityEntity authorityEntity =
+            AuthorityEntity.builder().authority(authority).user(user).build();
+        authorityRepository.save(authorityEntity);
+      }
+    }
+    UserEntity currentUser = getCurrentUserOrThrow();
+    if (user.getId() == currentUser.getId() && username != null) {
+      HttpServletResponse response = currentResponse();
+      if (response != null) {
+        sessionCookieService.generateSessionCookie(response, jwtService.generateJwt(username));
+      }
+    }
   }
 
   @McpTool(
@@ -250,7 +251,14 @@ public class GlobalService {
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
           long userId) {
     UserEntity user = getUser(userId);
+    long currentUserId = getCurrentUserOrThrow().getId();
     userRepository.delete(user);
+    if (user.getId() == currentUserId) {
+      HttpServletResponse response = currentResponse();
+      if (response != null) {
+        sessionCookieService.deleteSessionCookie(response);
+      }
+    }
   }
 
   @CircuitBreaker(name = "todo")
@@ -297,27 +305,19 @@ public class GlobalService {
       @McpToolParam(description = "The todo id.", required = true) long todoId,
       @McpToolParam(description = "The new title and/or description.", required = true) @Valid
           UpdateTodoDto updateTodoDto) {
-    if (updateTodoDto.getTitle().isEmpty() && updateTodoDto.getDescription().isEmpty()) {
+    if (updateTodoDto.getTitle() == null && updateTodoDto.getDescription() == null) {
       throw new IllegalArgumentException(
           "One of title or description must be provided for updateUserTodo operation");
     }
     TodoEntity todo = getUserTodo(userId, todoId);
-    updateTodoDto
-        .getTitle()
-        .ifPresent(
-            (title) -> {
-              if (!title.equals(todo.getTitle())) {
-                todo.setTitle(title);
-              }
-            });
-    updateTodoDto
-        .getDescription()
-        .ifPresent(
-            (description) -> {
-              if (!description.equals(todo.getDescription())) {
-                todo.setDescription(description);
-              }
-            });
+    String title = updateTodoDto.getTitle();
+    if (title != null && !title.equals(todo.getTitle())) {
+      todo.setTitle(title);
+    }
+    String description = updateTodoDto.getDescription();
+    if (description != null && !description.equals(todo.getDescription())) {
+      todo.setDescription(description);
+    }
     todoRepository.save(todo);
   }
 
@@ -345,6 +345,7 @@ public class GlobalService {
     todoRepository.delete(todo);
   }
 
+  @Transactional
   @McpTool(name = "delete_todos", description = "Delete every todo belonging to a user.")
   public void deleteUserTodos(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)

@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -71,9 +72,11 @@ public class SecurityConfiguration {
   public AuthenticationProvider authenticationProvider() {
     DaoAuthenticationProvider authenticationProvider =
         new DaoAuthenticationProvider(
-            username -> {
-              return userRepository.findByUsernameAndFetchAuthorities(username).get();
-            });
+            username ->
+                userRepository
+                    .findByUsernameAndFetchAuthorities(username)
+                    .orElseThrow(
+                        () -> new UsernameNotFoundException("User not found: " + username)));
     authenticationProvider.setPasswordEncoder(passwordEncoder());
     return authenticationProvider;
   }

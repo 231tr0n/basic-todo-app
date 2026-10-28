@@ -1,7 +1,7 @@
 package com.example.todo.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Size;
-import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +16,11 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateTodoDto {
-  private Optional<@Size(min = 1, max = 255) String> title;
-  private Optional<@Size(min = 1, max = 255) String> description;
+  @JsonProperty(required = false)
+  @Size(min = 1, max = 255)
+  private String title;
+
+  @JsonProperty(required = false)
+  @Size(min = 1, max = 255)
+  private String description;
 }

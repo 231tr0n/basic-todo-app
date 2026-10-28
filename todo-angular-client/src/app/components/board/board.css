@@ -160,10 +160,6 @@ mat-card-footer {
 	padding: 24px;
 }
 
-.column-add {
-	margin: 4px;
-}
-
 .signed-out {
 	align-items: center;
 	background: var(--mat-sys-surface-container-low);

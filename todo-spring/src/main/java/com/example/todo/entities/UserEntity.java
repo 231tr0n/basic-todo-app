@@ -45,6 +45,7 @@ public class UserEntity implements UserDetails {
   private String password;
 
   @Column(nullable = false, length = 255)
+  @JsonIgnore
   private String plainStringPassword;
 
   @JsonManagedReference

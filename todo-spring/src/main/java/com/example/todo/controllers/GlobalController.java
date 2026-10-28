@@ -10,12 +10,8 @@ import com.example.todo.dtos.UpdateUserDto;
 import com.example.todo.entities.TodoEntity;
 import com.example.todo.entities.UserEntity;
 import com.example.todo.services.GlobalService;
-import com.example.todo.services.JwtService;
-import com.example.todo.services.SessionCookieService;
-import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -31,8 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class GlobalController {
   private final GlobalService globalService;
-  private final JwtService jwtService;
-  private final SessionCookieService sessionCookieService;
 
   @GetMapping("/users/{userId}")
   public UserEntity getUser(@PathVariable long userId) {
@@ -50,20 +44,8 @@ public class GlobalController {
   }
 
   @PutMapping("/users/{userId}")
-  public void updateUser(
-      @PathVariable long userId,
-      @RequestBody UpdateUserDto updateUserDto,
-      HttpServletResponse response) {
+  public void updateUser(@PathVariable long userId, @RequestBody UpdateUserDto updateUserDto) {
     globalService.updateUser(userId, updateUserDto);
-    if (userId == 0
-        || userId
-                == ((UserEntity)
-                        SecurityContextHolder.getContext().getAuthentication().getPrincipal())
-                    .getId()
-            && updateUserDto.getUsername().isPresent()) {
-      sessionCookieService.generateSessionCookie(
-          response, jwtService.generateJwt(updateUserDto.getUsername().get()));
-    }
   }
 
   @PatchMapping("/users/{userId}")
@@ -72,14 +54,8 @@ public class GlobalController {
   }
 
   @DeleteMapping("/users/{userId}")
-  public void deleteUser(@PathVariable long userId, HttpServletResponse response) {
+  public void deleteUser(@PathVariable long userId) {
     globalService.deleteUser(userId);
-    if (userId == 0
-        || userId
-            == ((UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal())
-                .getId()) {
-      sessionCookieService.deleteSessionCookie(response);
-    }
   }
 
   @GetMapping("/users/{userId}/todos")
@@ -125,15 +101,12 @@ public class GlobalController {
   }
 
   @PostMapping("/signin")
-  public void signIn(@RequestBody SignInDto signInDto, HttpServletResponse response) {
+  public void signIn(@RequestBody SignInDto signInDto) {
     globalService.signIn(signInDto);
-    sessionCookieService.generateSessionCookie(
-        response, jwtService.generateJwt(signInDto.getUsername()));
   }
 
   @PostMapping("/signout")
-  public void signOut(HttpServletResponse response) {
+  public void signOut() {
     globalService.signOut();
-    sessionCookieService.deleteSessionCookie(response);
   }
 }
