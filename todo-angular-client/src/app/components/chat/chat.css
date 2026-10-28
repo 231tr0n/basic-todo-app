@@ -72,6 +72,24 @@
 	justify-content: flex-end;
 }
 
+.message.widget {
+	justify-content: flex-start;
+}
+
+.message.widget > app-ui-dialog {
+	max-width: min(92%, 760px);
+}
+
+.message.catalog > mat-card.catalog-card {
+	max-width: 100%;
+	width: 100%;
+}
+
+.catalog-loading {
+	color: var(--mat-sys-on-surface-variant);
+	margin: 8px 0;
+}
+
 .message.user > mat-card.message-card {
 	background-color: var(--mat-sys-secondary-container);
 	color: var(--mat-sys-on-secondary-container);
@@ -144,5 +162,33 @@ pre {
 
 	mat-card.message-card {
 		max-width: 92%;
+	}
+}
+
+@media (width <= 480px) {
+	.chat-page {
+		gap: 12px;
+		padding: 12px;
+	}
+
+	.chat-header h1 {
+		font: var(--mat-sys-headline-small);
+	}
+
+	.messages {
+		padding: 4px;
+	}
+
+	.message {
+		padding: 4px;
+	}
+
+	mat-card.message-card,
+	.message.widget > app-ui-dialog {
+		max-width: 100%;
+	}
+
+	.composer {
+		padding: 4px 8px 8px;
 	}
 }

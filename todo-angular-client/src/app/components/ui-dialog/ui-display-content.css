@@ -1,0 +1,41 @@
+.message {
+	margin-top: 0;
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+
+.checklist {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.table-scroll {
+	max-height: 60vh;
+	overflow: auto;
+}
+
+.ui-table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.ui-table th,
+.ui-table td {
+	border-bottom: 1px solid var(--mat-sys-outline-variant);
+	padding: 8px 12px;
+	text-align: left;
+	vertical-align: top;
+}
+
+.ui-table th {
+	background: var(--mat-sys-surface-container);
+	font: var(--mat-sys-title-small);
+	position: sticky;
+	top: 0;
+}
+
+.ui-table td {
+	font: var(--mat-sys-body-small);
+	overflow-wrap: anywhere;
+}

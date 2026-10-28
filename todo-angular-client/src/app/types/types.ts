@@ -19,15 +19,20 @@ export interface SignInDto {
 	password: string;
 }
 
+export interface UpdateUserDto {
+	username?: string;
+	authorities?: string[];
+}
+
+export interface PatchUserDto {
+	oldPassword: string;
+	newPassword: string;
+}
+
 export interface UserDto {
 	id: number;
 	username: string;
-	authorities: AuthorityDto[];
-}
-
-export interface AuthorityDto {
-	id: number;
-	authority: string;
+	authorities: string[];
 }
 
 export interface PatchTodoDto {

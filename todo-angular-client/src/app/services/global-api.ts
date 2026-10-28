@@ -1,21 +1,24 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
+import { BehaviorSubject, tap } from 'rxjs';
+import { AppConfiguration } from '../config/app-configuration';
 import {
 	CreateTodoDto,
 	PatchTodoDto,
+	PatchUserDto,
 	SignInDto,
 	SignUpDto,
 	TodoDto,
 	UpdateTodoDto,
+	UpdateUserDto,
 	UserDto
 } from '../types/types';
-import { BehaviorSubject, tap } from 'rxjs';
-import { AppConfiguration } from '../config/app-configuration';
 
 @Service()
 export class GlobalApi {
 	private readonly http = inject(HttpClient);
 	private readonly configuration = inject(AppConfiguration);
+	private readonly httpOptions = { withCredentials: true };
 
 	readonly loggedInUser = new BehaviorSubject<UserDto | null>(null);
 	private userRequestId = 0;
@@ -45,63 +48,79 @@ export class GlobalApi {
 		this.loggedInUser.next(null);
 	}
 
-	private get baseUrl() {
+	private get baseUrl(): string {
 		return this.configuration.apiBaseUrl;
 	}
 
-	private get currentUserId() {
+	private get currentUserId(): number {
 		return this.configuration.currentUserId;
 	}
 
 	signIn(dto: SignInDto) {
-		return this.http
-			.post(`${this.baseUrl}/signin`, dto, {
-				withCredentials: true
+		return this.http.post(`${this.baseUrl}/signin`, dto, this.httpOptions).pipe(
+			tap(() => {
+				this.refreshLoggedInUser();
 			})
-			.pipe(
-				tap(() => {
-					this.refreshLoggedInUser();
-				})
-			);
+		);
 	}
 
 	signUp(dto: SignUpDto) {
-		return this.http.post(`${this.baseUrl}/signup`, dto, {
-			withCredentials: true
-		});
+		return this.http.post(`${this.baseUrl}/signup`, dto, this.httpOptions);
 	}
 
 	signOut() {
-		return this.http
-			.post(
-				`${this.baseUrl}/signout`,
-				{},
-				{
-					withCredentials: true
-				}
-			)
-			.pipe(
-				tap(() => {
-					this.clearLoggedInUser();
-				})
-			);
+		return this.http.post(`${this.baseUrl}/signout`, {}, this.httpOptions).pipe(
+			tap(() => {
+				this.clearLoggedInUser();
+			})
+		);
 	}
 
 	getUser(userId?: number) {
 		return this.http.get<UserDto>(
 			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}`,
-			{
-				withCredentials: true
-			}
+			this.httpOptions
+		);
+	}
+
+	getUsers() {
+		return this.http.get<UserDto[]>(`${this.baseUrl}/users`, this.httpOptions);
+	}
+
+	updateUser(dto: UpdateUserDto, userId?: number) {
+		return this.http.put(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}`,
+			dto,
+			this.httpOptions
+		);
+	}
+
+	patchUser(dto: PatchUserDto, userId?: number) {
+		return this.http.patch(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}`,
+			dto,
+			this.httpOptions
+		);
+	}
+
+	deleteUser(userId?: number) {
+		return this.http.delete(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}`,
+			this.httpOptions
+		);
+	}
+
+	getTodo(todoId: number, userId?: number) {
+		return this.http.get<TodoDto>(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos/${todoId.toString()}`,
+			this.httpOptions
 		);
 	}
 
 	getTodos(userId?: number) {
 		return this.http.get<TodoDto[]>(
 			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos`,
-			{
-				withCredentials: true
-			}
+			this.httpOptions
 		);
 	}
 
@@ -109,9 +128,7 @@ export class GlobalApi {
 		return this.http.post<TodoDto>(
 			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos`,
 			dto,
-			{
-				withCredentials: true
-			}
+			this.httpOptions
 		);
 	}
 
@@ -119,9 +136,7 @@ export class GlobalApi {
 		return this.http.put(
 			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos/${todoId.toString()}`,
 			dto,
-			{
-				withCredentials: true
-			}
+			this.httpOptions
 		);
 	}
 
@@ -129,18 +144,21 @@ export class GlobalApi {
 		return this.http.patch(
 			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos/${todoId.toString()}`,
 			dto,
-			{
-				withCredentials: true
-			}
+			this.httpOptions
 		);
 	}
 
 	deleteTodo(todoId: number, userId?: number) {
 		return this.http.delete(
 			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos/${todoId.toString()}`,
-			{
-				withCredentials: true
-			}
+			this.httpOptions
+		);
+	}
+
+	deleteTodos(userId?: number) {
+		return this.http.delete(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos`,
+			this.httpOptions
 		);
 	}
 }

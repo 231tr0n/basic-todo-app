@@ -1,0 +1,77 @@
+<div class="catalog">
+	<div class="catalog-filters">
+		<mat-form-field subscriptSizing="dynamic">
+			<mat-label>Server</mat-label>
+			<input
+				matInput
+				class="filter-server"
+				[(ngModel)]="filters.server"
+				(ngModelChange)="applyFilters()" />
+		</mat-form-field>
+		<mat-form-field subscriptSizing="dynamic">
+			<mat-label>Tool</mat-label>
+			<input
+				matInput
+				class="filter-tool"
+				[(ngModel)]="filters.tool"
+				(ngModelChange)="applyFilters()" />
+		</mat-form-field>
+		<mat-form-field subscriptSizing="dynamic">
+			<mat-label>Description</mat-label>
+			<input
+				matInput
+				class="filter-description"
+				[(ngModel)]="filters.description"
+				(ngModelChange)="applyFilters()" />
+		</mat-form-field>
+		<mat-form-field subscriptSizing="dynamic">
+			<mat-label>Required</mat-label>
+			<input
+				matInput
+				class="filter-required"
+				[(ngModel)]="filters.required"
+				(ngModelChange)="applyFilters()" />
+		</mat-form-field>
+	</div>
+
+	@for (group of filteredGroups(); track group.server) {
+		<section class="server-group">
+			<h3>
+				{{ group.server }}
+				<span class="tool-count">{{ group.rows.length }}</span>
+			</h3>
+			<div class="table-scroll">
+				<table mat-table class="tool-table" [dataSource]="group.rows">
+					<ng-container matColumnDef="server">
+						<th *matHeaderCellDef mat-header-cell>Server</th>
+						<td *matCellDef="let row" mat-cell>{{ row.server }}</td>
+					</ng-container>
+
+					<ng-container matColumnDef="tool">
+						<th *matHeaderCellDef mat-header-cell>Tool</th>
+						<td *matCellDef="let row" mat-cell>
+							<code>{{ row.tool }}</code>
+						</td>
+					</ng-container>
+
+					<ng-container matColumnDef="description">
+						<th *matHeaderCellDef mat-header-cell>Description</th>
+						<td *matCellDef="let row" mat-cell>{{ row.description }}</td>
+					</ng-container>
+
+					<ng-container matColumnDef="required">
+						<th *matHeaderCellDef mat-header-cell>Required schema</th>
+						<td *matCellDef="let row" mat-cell>
+							<code>{{ row.required }}</code>
+						</td>
+					</ng-container>
+
+					<tr *matHeaderRowDef="displayedColumns" mat-header-row></tr>
+					<tr *matRowDef="let row; columns: displayedColumns" mat-row></tr>
+				</table>
+			</div>
+		</section>
+	} @empty {
+		<p class="empty">No tools match the filters.</p>
+	}
+</div>

@@ -1,6 +1,5 @@
 package com.example.todo.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,7 +14,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 
 @Entity
@@ -28,7 +26,6 @@ import org.springframework.security.core.GrantedAuthority;
     })
 @Getter
 @Setter
-@ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -41,9 +38,7 @@ public class AuthorityEntity implements GrantedAuthority {
   @Column(nullable = false, length = 255)
   private String authority;
 
-  @JsonBackReference
   @ManyToOne
   @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
-  @ToString.Exclude
   private UserEntity user;
 }

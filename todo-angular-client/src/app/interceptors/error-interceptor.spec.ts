@@ -1,20 +1,41 @@
+import { HttpErrorResponse, HttpRequest } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { HttpInterceptorFn, provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-
+import { firstValueFrom, throwError } from 'rxjs';
+import { vi } from 'vitest';
+import { GlobalApi } from '../services/global-api';
 import { errorInterceptor } from './error-interceptor';
 
 describe('errorInterceptor', () => {
-	const interceptor: HttpInterceptorFn = (req, next) =>
-		TestBed.runInInjectionContext(() => errorInterceptor(req, next));
+	let globalApi: { clearLoggedInUser: ReturnType<typeof vi.fn> };
 
 	beforeEach(() => {
+		globalApi = { clearLoggedInUser: vi.fn() };
 		TestBed.configureTestingModule({
-			providers: [provideHttpClient(), provideHttpClientTesting()]
+			providers: [{ provide: GlobalApi, useValue: globalApi }]
 		});
 	});
 
-	it('should be created', () => {
-		expect(interceptor).toBeTruthy();
+	it('clears the current user on unauthorized responses', async () => {
+		const request = new HttpRequest('GET', '/api/users/0');
+		const error = new HttpErrorResponse({ status: 401 });
+
+		const result = TestBed.runInInjectionContext(() =>
+			firstValueFrom(errorInterceptor(request, () => throwError(() => error)))
+		);
+
+		await expect(result).rejects.toBe(error);
+		expect(globalApi.clearLoggedInUser).toHaveBeenCalled();
+	});
+
+	it('keeps the current user on other errors', async () => {
+		const request = new HttpRequest('GET', '/api/users/0');
+		const error = new HttpErrorResponse({ status: 500 });
+
+		const result = TestBed.runInInjectionContext(() =>
+			firstValueFrom(errorInterceptor(request, () => throwError(() => error)))
+		);
+
+		await expect(result).rejects.toBe(error);
+		expect(globalApi.clearLoggedInUser).not.toHaveBeenCalled();
 	});
 });

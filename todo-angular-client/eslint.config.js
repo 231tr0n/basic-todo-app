@@ -73,7 +73,28 @@ export default defineConfig([
 			'@angular-eslint/template/no-call-expression': [
 				'error',
 				{
-					allowList: ['columns', 'isAdmin', 'isAuthenticated', 'loading', 'todos', 'user']
+					allowList: [
+						'activeWidget',
+						'chatInputDisabled',
+						'columns',
+						'debugMode',
+						'display',
+						'displayData',
+						'filteredGroups',
+						'has',
+						'isAdmin',
+						'isAuthenticated',
+						'isCurrentUser',
+						'label',
+						'loading',
+						'state',
+						'title',
+						'todos',
+						'toggleOption',
+						'toolGroups',
+						'user',
+						'users'
+					]
 				}
 			]
 		}

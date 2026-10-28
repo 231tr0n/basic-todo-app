@@ -1,6 +1,5 @@
 package com.example.todo.entities;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,13 +15,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Table(name = "todos")
 @Getter
 @Setter
-@ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -42,10 +39,8 @@ public class TodoEntity {
   @Column(nullable = false, length = 255)
   private StatusEnum status;
 
-  @JsonBackReference
   @ManyToOne
   @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
-  @ToString.Exclude
   private UserEntity user;
 
   public enum StatusEnum {

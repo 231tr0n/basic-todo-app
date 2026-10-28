@@ -1,0 +1,32 @@
+:host {
+	display: block;
+	max-width: min(100%, 760px);
+	width: 100%;
+}
+
+.ui-widget {
+	box-sizing: border-box;
+	width: 100%;
+}
+
+mat-card-title {
+	font: var(--mat-sys-title-small);
+	overflow-wrap: anywhere;
+}
+
+mat-card-content {
+	padding-top: 12px;
+}
+
+.description {
+	color: var(--mat-sys-on-surface-variant);
+	margin: 0 0 12px;
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+
+@media (width <= 600px) {
+	mat-card-actions {
+		gap: 8px;
+	}
+}

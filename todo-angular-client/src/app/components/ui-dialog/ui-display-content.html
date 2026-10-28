@@ -1,0 +1,54 @@
+@switch (display().kind) {
+	@case ('message') {
+		<p class="message">{{ display().message }}</p>
+	}
+	@case ('list') {
+		@if (display().ordered === false) {
+			<ul>
+				@for (item of display().items ?? []; track $index) {
+					<li>{{ item }}</li>
+				}
+			</ul>
+		} @else {
+			<ol>
+				@for (item of display().items ?? []; track $index) {
+					<li>{{ item }}</li>
+				}
+			</ol>
+		}
+	}
+	@case ('table') {
+		<div class="table-scroll">
+			<table class="ui-table">
+				<thead>
+					<tr>
+						@for (column of display().columns ?? []; track $index) {
+							<th>{{ column }}</th>
+						}
+					</tr>
+				</thead>
+				<tbody>
+					@for (row of display().rows ?? []; track $index) {
+						<tr>
+							@for (cell of row; track $index) {
+								<td>{{ cell }}</td>
+							}
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+	@case ('checklist') {
+		<div class="checklist">
+			@for (item of display().items ?? []; track $index) {
+				<mat-checkbox [checked]="display().checked?.[$index] ?? false" [disabled]="true">
+					{{ item }}
+				</mat-checkbox>
+			}
+		</div>
+	}
+	@default {
+		<p class="message">Unsupported content.</p>
+	}
+}

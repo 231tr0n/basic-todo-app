@@ -1,0 +1,29 @@
+<mat-card class="ui-widget" appearance="outlined">
+	<mat-card-header>
+		<mat-card-title>{{ title() }}</mat-card-title>
+	</mat-card-header>
+	<mat-card-content>
+		@if (displayData(); as display) {
+			<app-ui-display-content [display]="display" />
+		} @else if (state(); as input) {
+			@if (input.data.description) {
+				<p class="description">{{ input.data.description }}</p>
+			}
+			@if (input.isChoice) {
+				<app-ui-choice-fields [state]="input" />
+			} @else {
+				<app-ui-value-fields [state]="input" />
+			}
+		}
+	</mat-card-content>
+	<mat-card-actions align="end">
+		@if (displayData()) {
+			<button matButton="filled" type="button" (click)="close()">Close</button>
+		} @else {
+			<button matButton type="button" (click)="close()">Cancel</button>
+			<button matButton="filled" type="button" [disabled]="!state()?.valid" (click)="confirm()">
+				{{ state()?.data?.kind === 'confirm' ? 'Confirm' : 'OK' }}
+			</button>
+		}
+	</mat-card-actions>
+</mat-card>

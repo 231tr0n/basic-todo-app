@@ -3,6 +3,7 @@ package com.example.todo.configurations;
 import com.example.todo.components.JwtAuthenticationFilterComponent;
 import com.example.todo.constants.Constants;
 import com.example.todo.repositories.UserRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,13 +39,18 @@ public class SecurityConfiguration {
         .redirectToHttps(redirect -> redirect.disable())
         .authenticationProvider(authenticationProvider())
         .anonymous(anonymous -> anonymous.disable())
+        .exceptionHandling(
+            exception ->
+                exception.authenticationEntryPoint(
+                    (request, response, authException) ->
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(
             jwtAuthenticationFilterComponent, UsernamePasswordAuthenticationFilter.class)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/signup")
+                auth.requestMatchers("/api/signup", "/api/signin")
                     .permitAll()
                     .requestMatchers("/api/users", "/api/users/**", "/api/signout")
                     .authenticated()

@@ -1,0 +1,10 @@
+mat-form-field {
+	min-width: 0;
+	width: 100%;
+}
+
+.checklist {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}

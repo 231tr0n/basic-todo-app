@@ -9,6 +9,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { AuthDialogService } from '../../services/auth-dialog';
+import { ConfirmDialogService } from '../../services/confirm-dialog';
 import { TodoStore } from '../../services/todo-store';
 import { TodoDto, TodoStatus, isTodoStatus } from '../../types/types';
 import { TodoDialog, TodoDialogData, TodoDialogResult } from '../todo-dialog/todo-dialog';
@@ -35,6 +36,7 @@ export class Board implements OnDestroy {
 	protected readonly store = inject(TodoStore);
 	private readonly dialog = inject(MatDialog);
 	private readonly authDialog = inject(AuthDialogService);
+	private readonly confirmDialog = inject(ConfirmDialogService);
 	private readonly openDialogs = new Set<MatDialogRef<TodoDialog, TodoDialogResult>>();
 
 	ngOnDestroy(): void {
@@ -66,21 +68,30 @@ export class Board implements OnDestroy {
 	}
 
 	protected async onEdit(todo: TodoDto): Promise<void> {
-		const result = await this.openTodoDialog({ todo });
+		const current = await this.store.getTodo(todo.id);
+		if (!current) return;
+		const result = await this.openTodoDialog({ todo: current });
 		if (!result) return;
-		if (result.title !== todo.title || result.description !== todo.description) {
-			const updated = await this.store.update(todo, {
+		if (result.title !== current.title || result.description !== current.description) {
+			const updated = await this.store.update(current, {
 				title: result.title,
 				description: result.description
 			});
 			if (!updated) return;
 		}
-		if (result.status !== todo.status) {
-			await this.store.changeStatus(todo, result.status);
+		if (result.status !== current.status) {
+			await this.store.changeStatus(current, result.status);
 		}
 	}
 
 	protected async onDelete(todo: TodoDto): Promise<void> {
+		const confirmed = await this.confirmDialog.confirm({
+			title: 'Delete todo',
+			message: `Delete “${todo.title}”?`,
+			confirmLabel: 'Delete',
+			destructive: true
+		});
+		if (!confirmed) return;
 		await this.store.remove(todo);
 	}
 
@@ -97,7 +108,25 @@ export class Board implements OnDestroy {
 	}
 
 	protected async onClearCompleted(): Promise<void> {
+		const confirmed = await this.confirmDialog.confirm({
+			title: 'Clear completed todos',
+			message: `Delete ${this.completedCount.toString()} completed todos?`,
+			confirmLabel: 'Clear completed',
+			destructive: true
+		});
+		if (!confirmed) return;
 		await this.store.removeCompleted();
+	}
+
+	protected async onDeleteAll(): Promise<void> {
+		const confirmed = await this.confirmDialog.confirm({
+			title: 'Delete all todos',
+			message: `Delete all ${this.todoCount.toString()} todos? This cannot be undone.`,
+			confirmLabel: 'Delete all',
+			destructive: true
+		});
+		if (!confirmed) return;
+		await this.store.removeAll();
 	}
 
 	private async openTodoDialog(data: TodoDialogData): Promise<TodoDialogResult | undefined> {

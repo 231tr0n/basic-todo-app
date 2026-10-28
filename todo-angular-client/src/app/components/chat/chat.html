@@ -2,13 +2,15 @@
 	<header class="chat-header">
 		<div>
 			<h1>Assistant</h1>
-			<p>Ask the assistant to manage your board, or answer its questions in the dialogs.</p>
+			<p>Ask the assistant to manage your board, or answer its questions in the chat.</p>
 		</div>
 		<div class="chat-controls">
-			<mat-checkbox [(ngModel)]="debugMode">Debug mode</mat-checkbox>
+			<mat-checkbox [ngModel]="debugMode()" (ngModelChange)="onDebugModeChange($event)"
+				>Debug mode</mat-checkbox
+			>
 			<mat-form-field subscriptSizing="dynamic" class="model-picker">
 				<mat-label>Model</mat-label>
-				<mat-select [disabled]="chatInputDisabled" [(ngModel)]="selectedAiAgentModel">
+				<mat-select [disabled]="chatInputDisabled()" [(ngModel)]="selectedAiAgentModel">
 					@for (model of availableAiAgentModels; track model) {
 						<mat-option [value]="model">{{ model }}</mat-option>
 					}
@@ -18,7 +20,7 @@
 					matSuffix
 					class="action-button"
 					type="button"
-					[disabled]="chatInputDisabled"
+					[disabled]="chatInputDisabled()"
 					(click)="onRefreshAiAgentModels($event)">
 					<mat-icon>refresh</mat-icon>
 				</button>
@@ -38,6 +40,22 @@
 					</p>
 				</div>
 			}
+			@if (debugMode()) {
+				<div class="message catalog">
+					<mat-card class="message-card catalog-card" appearance="outlined">
+						<mat-card-header>
+							<mat-card-title>MCP tool catalog</mat-card-title>
+						</mat-card-header>
+						<mat-card-content>
+							@if (toolGroups().length > 0) {
+								<app-tool-catalog [groups]="toolGroups()" />
+							} @else {
+								<p class="catalog-loading">Loading tools…</p>
+							}
+						</mat-card-content>
+					</mat-card>
+				</div>
+			}
 			@for (message of visibleMessages; track message) {
 				<div class="message" [class.user]="message.role === 'user'">
 					<mat-card class="message-card" appearance="outlined">
@@ -51,11 +69,16 @@
 						</mat-card-header>
 						<mat-card-content>
 							<div [innerHTML]="message | chatCompletionMessageParamMarkdownToHtml"></div>
-							@if (debugMode) {
+							@if (debugMode()) {
 								<div [innerHTML]="message | chatCompletionMessageToolCallToMarkdownHtmlPipe"></div>
 							}
 						</mat-card-content>
 					</mat-card>
+				</div>
+			}
+			@if (activeWidget(); as widget) {
+				<div class="message widget">
+					<app-ui-dialog [data]="widget.data" (resolved)="onWidgetResolved(widget.id, $event)" />
 				</div>
 			}
 		</div>
@@ -67,7 +90,7 @@
 				required
 				cdkTextareaAutosize
 				[cdkAutosizeMaxRows]="currentMaxTextAreaSize"
-				[disabled]="chatInputDisabled"
+				[disabled]="chatInputDisabled()"
 				[(ngModel)]="message"
 				(keydown.control.enter)="onSend($event)"></textarea>
 			<button
@@ -75,7 +98,7 @@
 				matSuffix
 				class="action-button"
 				type="button"
-				[disabled]="chatInputDisabled"
+				[disabled]="chatInputDisabled()"
 				(click)="onClear($event)">
 				<mat-icon>delete</mat-icon>
 			</button>
@@ -87,7 +110,7 @@
 				matSuffix
 				class="action-button"
 				type="button"
-				[disabled]="chatInputDisabled"
+				[disabled]="chatInputDisabled()"
 				(click)="onSend($event)">
 				<mat-icon>send</mat-icon>
 			</button>

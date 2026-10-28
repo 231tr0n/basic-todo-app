@@ -5,10 +5,11 @@ import type { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { AppConfiguration } from '../config/app-configuration';
 import { MessageChannelTransport } from '../library/mcp-message-channel-transport';
-import { UiInputResult } from '../types/ui-input';
-import { UiInputService } from './ui-input';
+import { UiInputResult } from '../types/ui-dialog';
+import { UiDialogService } from './ui-dialog';
 
 const promptSchema = z.string().min(1).describe('The question or instruction shown to the user.');
+const titleSchema = z.string().min(1).describe('The title shown at the top of the dialog.');
 const labelSchema = z.string().min(1).optional().describe('The label of the input control.');
 const descriptionSchema = z
 	.string()
@@ -18,7 +19,7 @@ const descriptionSchema = z
 @Service()
 export class UiMcpServer {
 	private readonly configuration = inject(AppConfiguration);
-	private readonly uiInput = inject(UiInputService);
+	private readonly uiDialog = inject(UiDialogService);
 
 	private server: McpServer | null = null;
 	private client: Client | null = null;
@@ -48,7 +49,7 @@ export class UiMcpServer {
 		this.connecting = null;
 		this.client = null;
 		this.server = null;
-		this.uiInput.closeAll();
+		this.uiDialog.closeAll();
 		await Promise.allSettled([
 			connecting?.catch(() => undefined),
 			client?.close(),
@@ -106,21 +107,35 @@ export class UiMcpServer {
 		if (value === null) {
 			return { content: [{ type: 'text', text: 'The user cancelled the input.' }] };
 		}
-		return {
-			content: [{ type: 'text', text: typeof value === 'boolean' ? String(value) : value }]
-		};
+		const text =
+			typeof value === 'string'
+				? value
+				: typeof value === 'boolean'
+					? String(value)
+					: JSON.stringify(value);
+		return { content: [{ type: 'text', text }] };
+	}
+
+	private shownResult(kind: string): CallToolResult {
+		return { content: [{ type: 'text', text: `Displayed ${kind} to the user.` }] };
 	}
 
 	private registerTools(server: McpServer): void {
+		this.registerInputTools(server);
+		this.registerDisplayTools(server);
+	}
+
+	private registerInputTools(server: McpServer): void {
 		server.registerTool(
 			'ui_ask_select',
 			{
-				title: 'Ask user to select an option',
+				title: 'Ask user to select one option',
 				description:
 					'Show a dropdown of known options and let the user pick exactly one. Use this instead of free text when the possible values are known.',
 				inputSchema: {
 					prompt: promptSchema,
 					label: labelSchema,
+					description: descriptionSchema,
 					options: z
 						.array(z.string().min(1))
 						.min(1)
@@ -129,14 +144,49 @@ export class UiMcpServer {
 				},
 				annotations: { readOnlyHint: true, openWorldHint: false }
 			},
-			async ({ prompt, label, options, initialValue }) =>
+			async ({ prompt, label, description, options, initialValue }) =>
 				this.toResult(
-					await this.uiInput.ask({
+					await this.uiDialog.ask({
 						kind: 'select',
 						prompt,
 						label,
+						description,
 						options,
 						initialValue
+					})
+				)
+		);
+
+		server.registerTool(
+			'ui_ask_multiselect',
+			{
+				title: 'Ask user to select multiple options',
+				description:
+					'Show a checkbox list and let the user select any number of known options. Returns a JSON array.',
+				inputSchema: {
+					prompt: promptSchema,
+					label: labelSchema,
+					description: descriptionSchema,
+					options: z
+						.array(z.string().min(1))
+						.min(1)
+						.describe('The options the user can select from.'),
+					initialValues: z
+						.array(z.string())
+						.optional()
+						.describe('The options selected when the dialog opens.')
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ prompt, label, description, options, initialValues }) =>
+				this.toResult(
+					await this.uiDialog.ask({
+						kind: 'multiselect',
+						prompt,
+						label,
+						description,
+						options,
+						initialValues
 					})
 				)
 		);
@@ -150,6 +200,7 @@ export class UiMcpServer {
 				inputSchema: {
 					prompt: promptSchema,
 					label: labelSchema,
+					description: descriptionSchema,
 					options: z
 						.array(z.string().min(1))
 						.min(1)
@@ -158,48 +209,17 @@ export class UiMcpServer {
 				},
 				annotations: { readOnlyHint: true, openWorldHint: false }
 			},
-			async ({ prompt, label, options, initialValue }) =>
+			async ({ prompt, label, description, options, initialValue }) =>
 				this.toResult(
-					await this.uiInput.ask({
+					await this.uiDialog.ask({
 						kind: 'combobox',
 						prompt,
 						label,
+						description,
 						options,
 						initialValue
 					})
 				)
-		);
-
-		server.registerTool(
-			'ui_ask_date',
-			{
-				title: 'Ask user for a date',
-				description: 'Show a date picker and return the selected date in ISO format (YYYY-MM-DD).',
-				inputSchema: {
-					prompt: promptSchema,
-					label: labelSchema,
-					description: descriptionSchema
-				},
-				annotations: { readOnlyHint: true, openWorldHint: false }
-			},
-			async ({ prompt, label, description }) =>
-				this.toResult(await this.uiInput.ask({ kind: 'date', prompt, label, description }))
-		);
-
-		server.registerTool(
-			'ui_ask_time',
-			{
-				title: 'Ask user for a time',
-				description: 'Show a time input and return the selected time in 24-hour HH:mm format.',
-				inputSchema: {
-					prompt: promptSchema,
-					label: labelSchema,
-					description: descriptionSchema
-				},
-				annotations: { readOnlyHint: true, openWorldHint: false }
-			},
-			async ({ prompt, label, description }) =>
-				this.toResult(await this.uiInput.ask({ kind: 'time', prompt, label, description }))
 		);
 
 		server.registerTool(
@@ -217,7 +237,7 @@ export class UiMcpServer {
 			},
 			async ({ prompt, label, description, initialValue }) =>
 				this.toResult(
-					await this.uiInput.ask({
+					await this.uiDialog.ask({
 						kind: 'text',
 						prompt,
 						label,
@@ -242,7 +262,7 @@ export class UiMcpServer {
 			},
 			async ({ prompt, label, description, initialValue }) =>
 				this.toResult(
-					await this.uiInput.ask({
+					await this.uiDialog.ask({
 						kind: 'multiline',
 						prompt,
 						label,
@@ -250,6 +270,101 @@ export class UiMcpServer {
 						initialValue
 					})
 				)
+		);
+
+		server.registerTool(
+			'ui_ask_number',
+			{
+				title: 'Ask user for a number',
+				description: 'Show a numeric input with optional minimum and maximum bounds.',
+				inputSchema: {
+					prompt: promptSchema,
+					label: labelSchema,
+					description: descriptionSchema,
+					min: z.number().optional().describe('The smallest accepted value.'),
+					max: z.number().optional().describe('The largest accepted value.'),
+					initialValue: z.number().optional().describe('The initial numeric value.')
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ prompt, label, description, min, max, initialValue }) =>
+				this.toResult(
+					await this.uiDialog.ask({
+						kind: 'number',
+						prompt,
+						label,
+						description,
+						min,
+						max,
+						initialValue: initialValue?.toString()
+					})
+				)
+		);
+
+		server.registerTool(
+			'ui_ask_date',
+			{
+				title: 'Ask user for a date',
+				description: 'Show a date picker and return the selected date in ISO format (YYYY-MM-DD).',
+				inputSchema: {
+					prompt: promptSchema,
+					label: labelSchema,
+					description: descriptionSchema
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ prompt, label, description }) =>
+				this.toResult(await this.uiDialog.ask({ kind: 'date', prompt, label, description }))
+		);
+
+		server.registerTool(
+			'ui_ask_date_range',
+			{
+				title: 'Ask user for a date range',
+				description:
+					'Show start and end date pickers and return JSON with start and end dates in ISO format.',
+				inputSchema: {
+					prompt: promptSchema,
+					label: labelSchema,
+					description: descriptionSchema
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ prompt, label, description }) =>
+				this.toResult(await this.uiDialog.ask({ kind: 'date-range', prompt, label, description }))
+		);
+
+		server.registerTool(
+			'ui_ask_time',
+			{
+				title: 'Ask user for a time',
+				description: 'Show a time input and return the selected time in 24-hour HH:mm format.',
+				inputSchema: {
+					prompt: promptSchema,
+					label: labelSchema,
+					description: descriptionSchema
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ prompt, label, description }) =>
+				this.toResult(await this.uiDialog.ask({ kind: 'time', prompt, label, description }))
+		);
+
+		server.registerTool(
+			'ui_ask_time_range',
+			{
+				title: 'Ask user for a time range',
+				description:
+					'Show start and end time inputs and return JSON with start and end times in 24-hour HH:mm format.',
+				inputSchema: {
+					prompt: promptSchema,
+					label: labelSchema,
+					description: descriptionSchema
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ prompt, label, description }) =>
+				this.toResult(await this.uiDialog.ask({ kind: 'time-range', prompt, label, description }))
 		);
 
 		server.registerTool(
@@ -264,7 +379,86 @@ export class UiMcpServer {
 				annotations: { readOnlyHint: true, openWorldHint: false }
 			},
 			async ({ prompt, description }) =>
-				this.toResult(await this.uiInput.ask({ kind: 'confirm', prompt, description }))
+				this.toResult(await this.uiDialog.ask({ kind: 'confirm', prompt, description }))
+		);
+	}
+
+	private registerDisplayTools(server: McpServer): void {
+		server.registerTool(
+			'ui_show_message',
+			{
+				title: 'Show a message',
+				description: 'Show a read-only message dialog to the user.',
+				inputSchema: {
+					title: titleSchema,
+					message: z.string().min(1).describe('The message to display.')
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ title, message }) => {
+				await this.uiDialog.show({ kind: 'message', title, message });
+				return this.shownResult('the message');
+			}
+		);
+
+		server.registerTool(
+			'ui_show_list',
+			{
+				title: 'Show a list',
+				description: 'Show a read-only ordered or unordered list to the user.',
+				inputSchema: {
+					title: titleSchema,
+					items: z.array(z.string().min(1)).min(1).describe('The list items.'),
+					ordered: z.boolean().optional().describe('Whether the list is numbered.')
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ title, items, ordered }) => {
+				await this.uiDialog.show({ kind: 'list', title, items, ordered });
+				return this.shownResult('the list');
+			}
+		);
+
+		server.registerTool(
+			'ui_show_table',
+			{
+				title: 'Show a table',
+				description: 'Show a read-only table with the supplied column headers and rows.',
+				inputSchema: {
+					title: titleSchema,
+					columns: z.array(z.string().min(1)).min(1).describe('The table column headers.'),
+					rows: z
+						.array(z.array(z.string()))
+						.min(1)
+						.describe('The table rows. Every row should contain one cell per column.')
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ title, columns, rows }) => {
+				await this.uiDialog.show({ kind: 'table', title, columns, rows });
+				return this.shownResult('the table');
+			}
+		);
+
+		server.registerTool(
+			'ui_show_checklist',
+			{
+				title: 'Show a checklist',
+				description: 'Show a read-only checklist with optional checked states.',
+				inputSchema: {
+					title: titleSchema,
+					items: z.array(z.string().min(1)).min(1).describe('The checklist items.'),
+					checked: z
+						.array(z.boolean())
+						.optional()
+						.describe('The checked state for each item, in the same order.')
+				},
+				annotations: { readOnlyHint: true, openWorldHint: false }
+			},
+			async ({ title, items, checked }) => {
+				await this.uiDialog.show({ kind: 'checklist', title, items, checked });
+				return this.shownResult('the checklist');
+			}
 		);
 	}
 }

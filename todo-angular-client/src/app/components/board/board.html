@@ -14,11 +14,25 @@
 			<button
 				matButton
 				type="button"
-				[disabled]="!store.isAuthenticated() || completedCount === 0"
-				(click)="onClearCompleted()">
-				<mat-icon>cleaning_services</mat-icon>
-				Clear completed
+				[matMenuTriggerFor]="boardMenu"
+				[disabled]="!store.isAuthenticated()">
+				<mat-icon>more_vert</mat-icon>
+				Actions
 			</button>
+			<mat-menu #boardMenu="matMenu">
+				<button
+					mat-menu-item
+					type="button"
+					[disabled]="completedCount === 0"
+					(click)="onClearCompleted()">
+					<mat-icon>cleaning_services</mat-icon>
+					<span>Clear completed</span>
+				</button>
+				<button mat-menu-item type="button" [disabled]="todoCount === 0" (click)="onDeleteAll()">
+					<mat-icon>delete_sweep</mat-icon>
+					<span>Delete all todos</span>
+				</button>
+			</mat-menu>
 		</div>
 	</header>
 

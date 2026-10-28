@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiController {
 
   static final String API_PREFIX = "/api/ai";
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
 
   private final TodoConfigurationProperties configurationProperties;
   private final HttpClient httpClient =
@@ -33,6 +34,7 @@ public class AiController {
       throws IOException, InterruptedException {
     HttpRequest.Builder requestBuilder =
         HttpRequest.newBuilder(providerUri(request))
+            .timeout(REQUEST_TIMEOUT)
             .method(
                 request.getMethod(),
                 body == null

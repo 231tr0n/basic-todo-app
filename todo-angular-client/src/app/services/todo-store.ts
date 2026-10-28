@@ -5,13 +5,15 @@ import { firstValueFrom } from 'rxjs';
 import { AppConfiguration } from '../config/app-configuration';
 import {
 	CreateTodoDto,
+	PatchUserDto,
 	SignInDto,
 	SignUpDto,
 	TodoColumn,
 	TodoDto,
 	TodoStatus,
 	TODO_COLUMNS,
-	UpdateTodoDto
+	UpdateTodoDto,
+	UpdateUserDto
 } from '../types/types';
 import { GlobalApi } from './global-api';
 
@@ -26,9 +28,7 @@ export class TodoStore {
 	readonly loading = signal(false);
 
 	readonly isAuthenticated = computed(() => this.user() !== null);
-	readonly isAdmin = computed(
-		() => this.user()?.authorities.some((authority) => authority.authority === 'ADMIN') ?? false
-	);
+	readonly isAdmin = computed(() => this.user()?.authorities.includes('ADMIN') ?? false);
 	readonly columns = computed<readonly (TodoColumn & { todos: TodoDto[] })[]>(() =>
 		TODO_COLUMNS.map((column) => ({
 			...column,
@@ -78,6 +78,15 @@ export class TodoStore {
 		}
 	}
 
+	async getTodo(todoId: number): Promise<TodoDto | null> {
+		try {
+			return await firstValueFrom(this.api.getTodo(todoId));
+		} catch (error: unknown) {
+			this.handleError('Unable to load the todo', error);
+			return null;
+		}
+	}
+
 	async signIn(dto: SignInDto): Promise<void> {
 		await firstValueFrom(this.api.signIn(dto));
 	}
@@ -93,6 +102,28 @@ export class TodoStore {
 		this.todos.set([]);
 	}
 
+	async updateProfile(dto: UpdateUserDto): Promise<boolean> {
+		return this.mutate('Unable to update the profile', async () => {
+			await firstValueFrom(this.api.updateUser(dto));
+			this.api.refreshLoggedInUser();
+		});
+	}
+
+	async changePassword(dto: PatchUserDto): Promise<boolean> {
+		return this.mutate('Unable to change the password', async () => {
+			await firstValueFrom(this.api.patchUser(dto));
+		});
+	}
+
+	async deleteAccount(): Promise<boolean> {
+		return this.mutate('Unable to delete the account', async () => {
+			await firstValueFrom(this.api.deleteUser());
+			this.stateVersion += 1;
+			this.todos.set([]);
+			this.api.clearLoggedInUser();
+		});
+	}
+
 	async create(dto: CreateTodoDto): Promise<TodoDto | null> {
 		try {
 			const created = await firstValueFrom(this.api.createTodo(dto));
@@ -106,14 +137,10 @@ export class TodoStore {
 	}
 
 	async update(todo: TodoDto, dto: UpdateTodoDto): Promise<boolean> {
-		try {
+		return this.mutate('Unable to update the todo', async () => {
 			await firstValueFrom(this.api.updateTodo(dto, todo.id));
 			this.patchLocal(todo.id, dto);
-			return true;
-		} catch (error: unknown) {
-			this.handleError('Unable to update the todo', error);
-			return false;
-		}
+		});
 	}
 
 	async changeStatus(todo: TodoDto, status: TodoStatus): Promise<void> {
@@ -127,9 +154,6 @@ export class TodoStore {
 
 		try {
 			await firstValueFrom(this.api.patchTodo({ status }, todo.id));
-			if (this.statusMutations.get(todo.id) === mutationId) {
-				this.patchLocal(todo.id, { status });
-			}
 		} catch (error: unknown) {
 			if (this.statusMutations.get(todo.id) === mutationId) {
 				this.patchLocal(todo.id, { status: previousStatus });
@@ -142,14 +166,12 @@ export class TodoStore {
 		}
 	}
 
-	async remove(todo: TodoDto): Promise<void> {
-		try {
+	async remove(todo: TodoDto): Promise<boolean> {
+		return this.mutate('Unable to delete the todo', async () => {
 			await firstValueFrom(this.api.deleteTodo(todo.id));
 			this.stateVersion += 1;
 			this.todos.update((todos) => todos.filter((item) => item.id !== todo.id));
-		} catch (error: unknown) {
-			this.handleError('Unable to delete the todo', error);
-		}
+		});
 	}
 
 	async removeCompleted(): Promise<void> {
@@ -159,6 +181,24 @@ export class TodoStore {
 			if (current?.status === 'COMPLETED') {
 				await this.remove(current);
 			}
+		}
+	}
+
+	async removeAll(): Promise<boolean> {
+		return this.mutate('Unable to delete all todos', async () => {
+			await firstValueFrom(this.api.deleteTodos());
+			this.stateVersion += 1;
+			this.todos.set([]);
+		});
+	}
+
+	private async mutate(message: string, action: () => Promise<unknown>): Promise<boolean> {
+		try {
+			await action();
+			return true;
+		} catch (error: unknown) {
+			this.handleError(message, error);
+			return false;
 		}
 	}
 

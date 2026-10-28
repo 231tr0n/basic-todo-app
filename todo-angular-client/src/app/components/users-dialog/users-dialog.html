@@ -1,0 +1,58 @@
+<h2 mat-dialog-title>Manage users</h2>
+<mat-dialog-content>
+	@if (store.loading()) {
+		<mat-progress-bar mode="indeterminate" />
+	}
+	<div class="table-scroll">
+		<table mat-table class="users-table" [dataSource]="store.users()">
+			<ng-container matColumnDef="username">
+				<th *matHeaderCellDef mat-header-cell>User</th>
+				<td *matCellDef="let user" mat-cell>
+					<span class="username">{{ user.username }}</span>
+					@if (isCurrentUser(user)) {
+						<span class="you">You</span>
+					}
+				</td>
+			</ng-container>
+
+			<ng-container matColumnDef="authorities">
+				<th *matHeaderCellDef mat-header-cell>Role</th>
+				<td *matCellDef="let user" mat-cell>
+					{{ isAdmin(user) ? 'Administrator' : 'Member' }}
+				</td>
+			</ng-container>
+
+			<ng-container matColumnDef="actions">
+				<th *matHeaderCellDef mat-header-cell>Actions</th>
+				<td *matCellDef="let user" mat-cell>
+					<button
+						matIconButton
+						type="button"
+						[matTooltip]="
+							isAdmin(user) ? 'Remove administrator access' : 'Grant administrator access'
+						"
+						(click)="toggleAdmin(user)">
+						<mat-icon>{{ isAdmin(user) ? 'remove_moderator' : 'add_moderator' }}</mat-icon>
+					</button>
+					<button
+						matIconButton
+						type="button"
+						matTooltip="Delete user"
+						[disabled]="isCurrentUser(user)"
+						(click)="remove(user)">
+						<mat-icon>delete</mat-icon>
+					</button>
+				</td>
+			</ng-container>
+
+			<tr *matHeaderRowDef="displayedColumns" mat-header-row></tr>
+			<tr *matRowDef="let row; columns: displayedColumns" mat-row></tr>
+		</table>
+	</div>
+	@if (!store.loading() && store.users().length === 0) {
+		<p class="empty">No users found.</p>
+	}
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+	<button matButton type="button" (click)="close()">Close</button>
+</mat-dialog-actions>

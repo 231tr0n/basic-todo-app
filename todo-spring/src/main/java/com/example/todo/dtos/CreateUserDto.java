@@ -3,18 +3,12 @@ package com.example.todo.dtos;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
 public class CreateUserDto {
   @NotNull
@@ -26,6 +20,6 @@ public class CreateUserDto {
   private String password;
 
   @NotNull
-  @Size(min = 0, max = 10)
+  @Size(max = 10)
   private Set<String> authorities;
 }

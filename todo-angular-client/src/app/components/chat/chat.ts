@@ -2,10 +2,13 @@ import {
 	ChangeDetectionStrategy,
 	ChangeDetectorRef,
 	Component,
+	computed,
+	effect,
 	ElementRef,
 	inject,
 	OnDestroy,
 	OnInit,
+	signal,
 	viewChild
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -22,8 +25,13 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 import { AppConfiguration } from '../../config/app-configuration';
 import { AiChat } from '../../services/ai-chat';
 import { GlobalApi } from '../../services/global-api';
+import { UiDialogService } from '../../services/ui-dialog';
+import type { McpToolGroup } from '../../types/mcp-tools';
 import { ChatCompletionMessageParamMarkdownToHtmlPipe } from '../../pipes/chat-completion-message-param-markdown-to-html-pipe';
 import { ChatCompletionMessageToolCallToMarkdownHtmlPipePipe } from '../../pipes/chat-completion-message-tool-call-to-markdown-html-pipe-pipe';
+import { UiInputResult } from '../../types/ui-dialog';
+import { UiDialog } from '../ui-dialog/ui-dialog';
+import { ToolCatalog } from '../tool-catalog/tool-catalog';
 
 @Component({
 	selector: 'app-chat',
@@ -44,6 +52,8 @@ import { ChatCompletionMessageToolCallToMarkdownHtmlPipePipe } from '../../pipes
 		MatSelect,
 		MatSuffix,
 		TitleCasePipe,
+		UiDialog,
+		ToolCatalog,
 		ChatCompletionMessageParamMarkdownToHtmlPipe,
 		ChatCompletionMessageToolCallToMarkdownHtmlPipePipe
 	],
@@ -57,6 +67,7 @@ export class Chat implements OnInit, OnDestroy {
 	private readonly globalApi = inject(GlobalApi);
 	private readonly changeDetector = inject(ChangeDetectorRef);
 	private readonly snackBar = inject(MatSnackBar);
+	private readonly uiDialog = inject(UiDialogService);
 
 	protected readonly scrollableElement = viewChild<ElementRef<HTMLDivElement>>('scrollable');
 
@@ -64,12 +75,25 @@ export class Chat implements OnInit, OnDestroy {
 	protected message = '';
 	protected availableAiAgentModels: string[] = [];
 	protected selectedAiAgentModel = this.configuration.defaultAiModel;
-	protected chatInputDisabled = false;
-	protected debugMode = false;
+	protected readonly debugMode = signal(false);
+	protected readonly toolGroups = signal<readonly McpToolGroup[]>([]);
 	protected readonly currentMaxTextAreaSize = this.configuration.maxTextAreaRows;
+	protected readonly activeWidget = this.uiDialog.active;
+	protected readonly processing = signal(false);
+	protected readonly chatInputDisabled = computed(
+		() => this.processing() || this.uiDialog.hasActive()
+	);
+
+	constructor() {
+		effect(() => {
+			if (this.activeWidget()) {
+				this.onScroll();
+			}
+		});
+	}
 
 	protected get visibleMessages(): ChatCompletionMessageParam[] {
-		if (this.debugMode) return this.sessionData;
+		if (this.debugMode()) return this.sessionData;
 		return this.sessionData.filter((message) => {
 			if (message.role === 'system' || message.role === 'tool') return false;
 			if (message.role === 'assistant') {
@@ -81,6 +105,7 @@ export class Chat implements OnInit, OnDestroy {
 
 	private destroyed = false;
 	private loadingModels = false;
+	private loadingTools = false;
 
 	ngOnInit() {
 		this.onClear();
@@ -106,7 +131,7 @@ export class Chat implements OnInit, OnDestroy {
 
 	private handleError(message: string, error?: unknown) {
 		if (!this.isActive()) return;
-		this.chatInputDisabled = false;
+		this.processing.set(false);
 		let snackBarMessage = message;
 		if (error instanceof Error) {
 			snackBarMessage += `: ${error.message}`;
@@ -153,6 +178,29 @@ export class Chat implements OnInit, OnDestroy {
 		}
 	}
 
+	protected onDebugModeChange(enabled: boolean) {
+		this.debugMode.set(enabled);
+		if (enabled && this.toolGroups().length === 0) {
+			void this.loadToolGroups();
+		}
+	}
+
+	private async loadToolGroups() {
+		if (this.loadingTools) return;
+		this.loadingTools = true;
+		try {
+			await this.aiChat.initialize();
+			const groups = await this.aiChat.listToolGroups();
+			if (!this.isActive()) return;
+			this.toolGroups.set(groups);
+			this.changeDetector.markForCheck();
+		} catch (error: unknown) {
+			this.handleError('Error loading the MCP tools', error);
+		} finally {
+			this.loadingTools = false;
+		}
+	}
+
 	protected onClear(event?: MouseEvent) {
 		if (event) event.stopPropagation();
 		this.sessionData = [
@@ -166,12 +214,12 @@ export class Chat implements OnInit, OnDestroy {
 	protected async onSend(event?: Event) {
 		if (event) event.stopPropagation();
 		const message = this.message.trim();
-		if (!this.isActive() || this.chatInputDisabled || message.length === 0) return;
+		if (!this.isActive() || this.chatInputDisabled() || message.length === 0) return;
 
 		this.addUserMessage(message);
 		this.onScroll();
 		this.message = '';
-		this.chatInputDisabled = true;
+		this.processing.set(true);
 		this.changeDetector.markForCheck();
 
 		try {
@@ -183,12 +231,18 @@ export class Chat implements OnInit, OnDestroy {
 		} catch (error: unknown) {
 			this.handleError('Error processing messages', error);
 		} finally {
-			this.chatInputDisabled = false;
+			this.processing.set(false);
 			if (this.isActive()) {
 				this.globalApi.refreshLoggedInUser();
 				this.changeDetector.markForCheck();
 			}
 		}
+	}
+
+	protected onWidgetResolved(id: number, value: UiInputResult) {
+		this.uiDialog.resolve(id, value);
+		this.changeDetector.markForCheck();
+		this.onScroll();
 	}
 
 	private addUserMessage(content: string) {

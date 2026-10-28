@@ -1,7 +1,5 @@
 package com.example.todo.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,26 +9,22 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
-@ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@OnDelete(action = OnDeleteAction.CASCADE)
 public class UserEntity implements UserDetails {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,47 +35,41 @@ public class UserEntity implements UserDetails {
   private String username;
 
   @Column(nullable = false, length = 255)
-  @JsonIgnore
   private String password;
 
-  @Column(nullable = false, length = 255)
-  @JsonIgnore
-  private String plainStringPassword;
-
-  @JsonManagedReference
+  @Builder.Default
   @OneToMany(
       mappedBy = "user",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  private List<AuthorityEntity> authorities;
+  private List<AuthorityEntity> authorities = new ArrayList<>();
 
-  @JsonManagedReference
+  @Builder.Default
   @OneToMany(
       mappedBy = "user",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonIgnore
-  private List<TodoEntity> todos;
+  private List<TodoEntity> todos = new ArrayList<>();
 
-  @JsonIgnore
+  @Builder.Default
   @Column(nullable = false)
-  private boolean enabled;
+  private boolean enabled = true;
 
+  @Builder.Default
   @Column(nullable = false)
-  @JsonIgnore
-  private boolean loggedOut;
+  private boolean loggedOut = true;
 
-  @JsonIgnore
+  @Builder.Default
   @Column(nullable = false)
-  private boolean accountNonExpired;
+  private boolean accountNonExpired = true;
 
-  @JsonIgnore
+  @Builder.Default
   @Column(nullable = false)
-  private boolean accountNonLocked;
+  private boolean accountNonLocked = true;
 
-  @JsonIgnore
+  @Builder.Default
   @Column(nullable = false)
-  private boolean credentialsNonExpired;
+  private boolean credentialsNonExpired = true;
 }

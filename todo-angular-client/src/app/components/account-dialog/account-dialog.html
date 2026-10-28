@@ -1,0 +1,69 @@
+<h2 mat-dialog-title>Account settings</h2>
+<mat-dialog-content>
+	<mat-tab-group>
+		<mat-tab label="Profile">
+			<div class="form">
+				<mat-form-field>
+					<mat-label>Username</mat-label>
+					<input matInput name="username" maxlength="255" [(ngModel)]="username" />
+				</mat-form-field>
+				<p class="hint">Role: {{ store.isAdmin() ? 'Administrator' : 'Member' }}</p>
+				<button
+					matButton="filled"
+					type="button"
+					[disabled]="!profileValid || busy"
+					(click)="saveProfile()">
+					Save profile
+				</button>
+			</div>
+		</mat-tab>
+		<mat-tab label="Password">
+			<div class="form">
+				<mat-form-field>
+					<mat-label>Current password</mat-label>
+					<input
+						matInput
+						type="password"
+						name="oldPassword"
+						autocomplete="current-password"
+						[(ngModel)]="oldPassword" />
+				</mat-form-field>
+				<mat-form-field>
+					<mat-label>New password</mat-label>
+					<input
+						matInput
+						type="password"
+						name="newPassword"
+						autocomplete="new-password"
+						[(ngModel)]="newPassword" />
+				</mat-form-field>
+				<mat-form-field>
+					<mat-label>Confirm new password</mat-label>
+					<input
+						matInput
+						type="password"
+						name="confirmPassword"
+						autocomplete="new-password"
+						[(ngModel)]="confirmPassword" />
+				</mat-form-field>
+				<button
+					matButton="filled"
+					type="button"
+					[disabled]="!passwordValid || busy"
+					(click)="savePassword()">
+					Change password
+				</button>
+			</div>
+		</mat-tab>
+	</mat-tab-group>
+	<section class="danger">
+		<h3>Delete account</h3>
+		<p>Deleting your account also deletes every todo that belongs to it.</p>
+		<button matButton type="button" class="destructive" [disabled]="busy" (click)="deleteAccount()">
+			Delete account
+		</button>
+	</section>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+	<button matButton type="button" (click)="cancel()">Close</button>
+</mat-dialog-actions>

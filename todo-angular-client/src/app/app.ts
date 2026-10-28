@@ -4,8 +4,10 @@ import { MatIcon } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbar } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AccountDialogService } from './services/account-dialog';
 import { AuthDialogService } from './services/auth-dialog';
 import { TodoStore } from './services/todo-store';
+import { UsersDialogService } from './services/users-dialog';
 
 @Component({
 	selector: 'app-root',
@@ -26,6 +28,8 @@ import { TodoStore } from './services/todo-store';
 })
 export class App {
 	private readonly authDialog = inject(AuthDialogService);
+	private readonly accountDialog = inject(AccountDialogService);
+	private readonly usersDialog = inject(UsersDialogService);
 	protected readonly store = inject(TodoStore);
 
 	readonly title = 'Kanban Todo';
@@ -43,6 +47,14 @@ export class App {
 
 	protected async openAuth(mode: 'sign-in' | 'sign-up'): Promise<void> {
 		await this.authDialog.open(mode);
+	}
+
+	protected async openAccount(): Promise<void> {
+		await this.accountDialog.open();
+	}
+
+	protected async openUsers(): Promise<void> {
+		await this.usersDialog.open();
 	}
 
 	protected async signOut(): Promise<void> {

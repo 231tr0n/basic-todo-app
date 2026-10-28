@@ -3,7 +3,7 @@
 	flex-direction: column;
 	gap: 4px;
 	padding-top: 12px;
-	min-width: 320px;
+	min-width: 0;
 }
 
 mat-form-field {

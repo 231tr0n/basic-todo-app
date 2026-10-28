@@ -12,6 +12,12 @@
 	z-index: 2;
 }
 
+.app-content {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
 .brand-icon {
 	color: var(--mat-sys-primary);
 }
@@ -40,12 +46,6 @@
 	flex: 1;
 }
 
-.app-content {
-	flex: 1;
-	min-height: 0;
-	overflow: hidden;
-}
-
 .menu-header {
 	display: flex;
 	flex-direction: column;
@@ -65,5 +65,28 @@
 
 	.app-nav {
 		margin-left: 0;
+	}
+}
+
+@media (width <= 600px) {
+	.app-toolbar {
+		gap: 4px;
+		padding-inline: 8px;
+	}
+
+	.nav-label {
+		display: none;
+	}
+
+	.app-nav a {
+		min-width: 48px;
+		padding-inline: 12px;
+	}
+}
+
+@media (width <= 480px) {
+	.user-label,
+	.signup-button {
+		display: none;
 	}
 }

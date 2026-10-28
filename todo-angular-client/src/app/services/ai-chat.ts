@@ -7,6 +7,7 @@ import type {
 	ChatCompletionMessageToolCall
 } from 'openai/resources/chat/completions';
 import { AppConfiguration } from '../config/app-configuration';
+import type { McpToolGroup } from '../types/mcp-tools';
 import { TodoMcpClient } from './todo-mcp-client';
 import { UiMcpServer } from './ui-mcp-server';
 
@@ -42,6 +43,17 @@ export class AiChat {
 		const controller = this.ensureAbortController();
 		const models = await this.openai.models.list({ signal: controller.signal });
 		return models.data.map((model) => model.id);
+	}
+
+	async listToolGroups(): Promise<McpToolGroup[]> {
+		const [todoTools, uiTools] = await Promise.all([
+			this.todoMcp.listTools(),
+			this.uiMcp.listTools()
+		]);
+		return [
+			{ server: 'Todo MCP server', tools: todoTools },
+			{ server: 'UI MCP server', tools: uiTools }
+		];
 	}
 
 	async run(
@@ -113,18 +125,17 @@ export class AiChat {
 	}
 
 	private async mapTools(): Promise<ChatCompletionFunctionTool[]> {
-		const [todoTools, uiTools] = await Promise.all([
-			this.todoMcp.listTools(),
-			this.uiMcp.listTools()
-		]);
-		return [...todoTools, ...uiTools].map((tool) => ({
-			type: 'function' as const,
-			function: {
-				name: tool.name,
-				description: tool.description ?? '',
-				parameters: tool.inputSchema
-			}
-		}));
+		const groups = await this.listToolGroups();
+		return groups
+			.flatMap((group) => group.tools)
+			.map((tool) => ({
+				type: 'function' as const,
+				function: {
+					name: tool.name,
+					description: tool.description ?? '',
+					parameters: tool.inputSchema
+				}
+			}));
 	}
 
 	private async runToolCall(

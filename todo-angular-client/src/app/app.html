@@ -8,11 +8,11 @@
 			routerLinkActive="active-link"
 			[routerLinkActiveOptions]="{ exact: true }">
 			<mat-icon>dashboard</mat-icon>
-			Board
+			<span class="nav-label">Board</span>
 		</a>
 		<a matButton routerLink="/chat" routerLinkActive="active-link">
 			<mat-icon>smart_toy</mat-icon>
-			Assistant
+			<span class="nav-label">Assistant</span>
 		</a>
 	</nav>
 	<span class="spacer"></span>
@@ -26,13 +26,23 @@
 	@if (store.user(); as user) {
 		<button matButton type="button" [matMenuTriggerFor]="userMenu">
 			<mat-icon>account_circle</mat-icon>
-			{{ user.username }}
+			<span class="user-label">{{ user.username }}</span>
 		</button>
 		<mat-menu #userMenu="matMenu">
 			<div class="menu-header">
 				<strong>{{ user.username }}</strong>
 				<span>{{ store.isAdmin() ? 'Administrator' : 'Member' }}</span>
 			</div>
+			<button mat-menu-item type="button" (click)="openAccount()">
+				<mat-icon>manage_accounts</mat-icon>
+				<span>Account settings</span>
+			</button>
+			@if (store.isAdmin()) {
+				<button mat-menu-item type="button" (click)="openUsers()">
+					<mat-icon>group</mat-icon>
+					<span>Manage users</span>
+				</button>
+			}
 			<button mat-menu-item type="button" (click)="signOut()">
 				<mat-icon>logout</mat-icon>
 				<span>Sign out</span>
@@ -40,7 +50,9 @@
 		</mat-menu>
 	} @else {
 		<button matButton type="button" (click)="openAuth('sign-in')">Sign in</button>
-		<button matButton="filled" type="button" (click)="openAuth('sign-up')">Create account</button>
+		<button class="signup-button" matButton="filled" type="button" (click)="openAuth('sign-up')">
+			Create account
+		</button>
 	}
 </mat-toolbar>
 <main class="app-content">

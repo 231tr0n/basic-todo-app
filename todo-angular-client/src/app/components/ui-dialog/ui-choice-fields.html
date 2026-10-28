@@ -1,0 +1,37 @@
+@switch (state().data.kind) {
+	@case ('select') {
+		<mat-form-field>
+			<mat-label>{{ label }}</mat-label>
+			<mat-select required [(ngModel)]="state().textValue">
+				@for (option of options; track option) {
+					<mat-option [value]="option">{{ option }}</mat-option>
+				}
+			</mat-select>
+		</mat-form-field>
+	}
+	@case ('multiselect') {
+		<div class="checklist">
+			@for (option of options; track option) {
+				<mat-checkbox
+					[checked]="state().selectedValues.has(option)"
+					(change)="state().toggleOption(option, $event.checked)">
+					{{ option }}
+				</mat-checkbox>
+			}
+		</div>
+	}
+	@case ('combobox') {
+		<mat-form-field>
+			<mat-label>{{ label }}</mat-label>
+			<input matInput required [matAutocomplete]="auto" [(ngModel)]="state().textValue" />
+			<mat-autocomplete #auto="matAutocomplete">
+				@for (option of options; track option) {
+					<mat-option [value]="option">{{ option }}</mat-option>
+				}
+			</mat-autocomplete>
+		</mat-form-field>
+	}
+	@default {
+		<p class="message">Unsupported input.</p>
+	}
+}

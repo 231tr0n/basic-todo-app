@@ -6,19 +6,21 @@ import com.example.todo.dtos.CreateUserDto;
 import com.example.todo.dtos.PatchTodoDto;
 import com.example.todo.dtos.PatchUserDto;
 import com.example.todo.dtos.SignInDto;
+import com.example.todo.dtos.TodoResponseDto;
 import com.example.todo.dtos.UpdateTodoDto;
 import com.example.todo.dtos.UpdateUserDto;
+import com.example.todo.dtos.UserResponseDto;
 import com.example.todo.entities.AuthorityEntity;
 import com.example.todo.entities.TodoEntity;
 import com.example.todo.entities.TodoEntity.StatusEnum;
 import com.example.todo.entities.UserEntity;
-import com.example.todo.repositories.AuthorityRepository;
+import com.example.todo.exceptions.ConflictException;
 import com.example.todo.repositories.TodoRepository;
 import com.example.todo.repositories.UserRepository;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -43,8 +45,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Validated
 @AllArgsConstructor
 public class GlobalService {
+  private static final Set<String> ALLOWED_AUTHORITIES = Set.of(Constants.ADMIN_AUTHORITY);
+
   private final UserRepository userRepository;
-  private final AuthorityRepository authorityRepository;
   private final TodoRepository todoRepository;
   private final BCryptPasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
@@ -53,9 +56,7 @@ public class GlobalService {
 
   public static boolean isAdmin(@NonNull UserEntity user) {
     return user.getAuthorities().stream()
-        .map(authorityEntity -> authorityEntity.getAuthority())
-        .toList()
-        .contains(Constants.ADMIN_AUTHORITY);
+        .anyMatch(authority -> Constants.ADMIN_AUTHORITY.equals(authority.getAuthority()));
   }
 
   public static void isAdminOrThrow(@NonNull UserEntity user) {
@@ -64,61 +65,70 @@ public class GlobalService {
     }
   }
 
-  public void notExistsUsernameOrThrow(@NonNull String username) {
+  private void ensureUsernameAvailable(@NonNull String username) {
     if (userRepository.findByUsername(username).isPresent()) {
-      throw new IllegalArgumentException("Username already exists");
+      throw new ConflictException("Username already exists");
+    }
+  }
+
+  private static void ensureKnownAuthorities(Set<String> authorities) {
+    if (!ALLOWED_AUTHORITIES.containsAll(authorities)) {
+      throw new IllegalArgumentException("Unknown authority");
+    }
+  }
+
+  private void ensureCanAssignAdmin(Set<String> authorities) {
+    if (!authorities.contains(Constants.ADMIN_AUTHORITY)) return;
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null && authentication.getPrincipal() instanceof UserEntity user) {
+      isAdminOrThrow(user);
+      return;
+    }
+    if (userRepository.countByAuthorities_Authority(Constants.ADMIN_AUTHORITY) > 0) {
+      throw new AuthorizationDeniedException(
+          "Only an administrator can assign the ADMIN authority");
     }
   }
 
   @Transactional
-  @CircuitBreaker(name = "todo")
   @McpTool(
       name = "sign_up",
       description =
           "Create a new user account with the supplied username, password and authorities.")
   public void createUser(
       @McpToolParam(description = "The account to create.", required = true) @Valid
-          CreateUserDto signUpDto) {
-    notExistsUsernameOrThrow(signUpDto.getUsername());
+          CreateUserDto createUserDto) {
+    ensureUsernameAvailable(createUserDto.getUsername());
+    ensureKnownAuthorities(createUserDto.getAuthorities());
+    ensureCanAssignAdmin(createUserDto.getAuthorities());
     UserEntity user =
         UserEntity.builder()
-            .username(signUpDto.getUsername())
-            .password(passwordEncoder.encode(signUpDto.getPassword()))
-            .plainStringPassword(signUpDto.getPassword())
-            .enabled(true)
-            .loggedOut(true)
-            .accountNonLocked(true)
-            .accountNonExpired(true)
-            .credentialsNonExpired(true)
+            .username(createUserDto.getUsername())
+            .password(passwordEncoder.encode(createUserDto.getPassword()))
             .build();
-    userRepository.save(user);
-    user = userRepository.findByUsername(signUpDto.getUsername()).get();
-    for (String authority : signUpDto.getAuthorities()) {
-      AuthorityEntity authorityEntity =
-          AuthorityEntity.builder().authority(authority).user(user).build();
-      authorityRepository.save(authorityEntity);
+    for (String authority : createUserDto.getAuthorities()) {
+      user.getAuthorities().add(AuthorityEntity.builder().authority(authority).user(user).build());
     }
+    userRepository.save(user);
   }
 
+  @Transactional
   @McpTool(name = "sign_in", description = "Sign in with an existing username and password.")
   public void signIn(
       @McpToolParam(description = "The sign-in credentials.", required = true) @Valid
           SignInDto signInDto) {
-    Authentication auth =
+    Authentication authentication =
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
                 signInDto.getUsername(), signInDto.getPassword()));
-    SecurityContextHolder.getContext().setAuthentication(auth);
-    UserEntity user = (UserEntity) auth.getPrincipal();
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    UserEntity user = (UserEntity) authentication.getPrincipal();
     user.setLoggedOut(false);
     userRepository.save(user);
-    HttpServletResponse response = currentResponse();
-    if (response != null) {
-      sessionCookieService.generateSessionCookie(
-          response, jwtService.generateJwt(signInDto.getUsername()));
-    }
+    refreshSessionCookie(signInDto.getUsername());
   }
 
+  @Transactional
   @McpTool(name = "sign_out", description = "Sign the currently authenticated user out.")
   public void signOut() {
     UserEntity user = getCurrentUserOrThrow();
@@ -131,6 +141,13 @@ public class GlobalService {
     }
   }
 
+  private void refreshSessionCookie(String username) {
+    HttpServletResponse response = currentResponse();
+    if (response != null) {
+      sessionCookieService.generateSessionCookie(response, jwtService.generateJwt(username));
+    }
+  }
+
   private static HttpServletResponse currentResponse() {
     if (RequestContextHolder.getRequestAttributes()
         instanceof ServletRequestAttributes servletRequestAttributes) {
@@ -139,44 +156,53 @@ public class GlobalService {
     return null;
   }
 
-  public UserEntity getCurrentUserOrThrow() {
-    if (SecurityContextHolder.getContext().getAuthentication() == null) {
-      throw new SessionAuthenticationException("User is not authenticated");
+  private UserEntity getCurrentUserOrThrow() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null && authentication.getPrincipal() instanceof UserEntity user) {
+      return user;
     }
-    return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    throw new SessionAuthenticationException("User is not authenticated");
   }
 
-  public UserEntity getCurrentUserIfAdminOrThrow() {
-    UserEntity user = getCurrentUserOrThrow();
-    isAdminOrThrow(user);
-    return user;
+  private UserEntity resolveUser(long userId) {
+    UserEntity currentUser = getCurrentUserOrThrow();
+    if (userId != 0 && userId != currentUser.getId()) {
+      isAdminOrThrow(currentUser);
+    }
+    long resolvedId = userId == 0 ? currentUser.getId() : userId;
+    return userRepository
+        .findByIdAndFetchAuthorities(resolvedId)
+        .orElseThrow(() -> new NoSuchElementException("User not found"));
   }
 
+  private TodoEntity resolveTodo(UserEntity user, long todoId) {
+    return todoRepository
+        .findByUserIdAndId(user.getId(), todoId)
+        .orElseThrow(() -> new NoSuchElementException("Todo not found"));
+  }
+
+  @Transactional(readOnly = true)
   @McpTool(
       name = "get_user",
       description =
           "Get a single user by id. Pass 0 to get the currently authenticated user. Admins may read any user.")
-  public UserEntity getUser(
+  public UserResponseDto getUser(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
           long userId) {
-    UserEntity currentUser = getCurrentUserOrThrow();
-    if (userId == 0 || currentUser.getId() == userId) {
-      return currentUser;
-    }
-    isAdminOrThrow(currentUser);
-    return userRepository.findByIdAndFetchAuthorities(userId).get();
+    return UserResponseDto.from(resolveUser(userId));
   }
 
+  @Transactional(readOnly = true)
   @McpTool(
       name = "get_users",
       description =
           "List users visible to the current user. Admins receive every user; other users receive themselves.")
-  public List<UserEntity> getUsers() {
-    UserEntity user = getCurrentUserOrThrow();
-    if (!isAdmin(user)) {
-      return List.of(user);
+  public List<UserResponseDto> getUsers() {
+    UserEntity currentUser = getCurrentUserOrThrow();
+    if (!isAdmin(currentUser)) {
+      return List.of(UserResponseDto.from(resolveUser(0)));
     }
-    return userRepository.findAllAndFetchAuthorities();
+    return userRepository.findAllAndFetchAuthorities().stream().map(UserResponseDto::from).toList();
   }
 
   @Transactional
@@ -186,39 +212,42 @@ public class GlobalService {
           long userId,
       @McpToolParam(description = "The new username and/or authorities.", required = true) @Valid
           UpdateUserDto updateUserDto) {
-    if (updateUserDto.getUsername() == null && updateUserDto.getAuthorities() == null) {
+    String username = updateUserDto.getUsername();
+    Set<String> authorities = updateUserDto.getAuthorities();
+    if (username == null && authorities == null) {
       throw new IllegalArgumentException(
           "One of username or authorities must be provided for updateUser operation");
     }
-    UserEntity user = getUser(userId);
-    String username = updateUserDto.getUsername();
+    UserEntity user = resolveUser(userId);
     if (username != null && !username.equals(user.getUsername())) {
-      notExistsUsernameOrThrow(username);
+      ensureUsernameAvailable(username);
       user.setUsername(username);
-      userRepository.save(user);
     }
-    Set<String> authorities = updateUserDto.getAuthorities();
-    if (authorities != null
-        && !authorities.equals(
-            user.getAuthorities().stream()
-                .map(AuthorityEntity::getAuthority)
-                .collect(Collectors.toSet()))) {
-      authorityRepository.deleteAllByUserId(user.getId());
-      for (String authority : authorities) {
-        AuthorityEntity authorityEntity =
-            AuthorityEntity.builder().authority(authority).user(user).build();
-        authorityRepository.save(authorityEntity);
-      }
+    if (authorities != null) {
+      ensureKnownAuthorities(authorities);
+      isAdminOrThrow(getCurrentUserOrThrow());
+      replaceAuthorities(user, authorities);
     }
-    UserEntity currentUser = getCurrentUserOrThrow();
-    if (user.getId() == currentUser.getId() && username != null) {
-      HttpServletResponse response = currentResponse();
-      if (response != null) {
-        sessionCookieService.generateSessionCookie(response, jwtService.generateJwt(username));
+    if (user.getId() == getCurrentUserOrThrow().getId() && username != null) {
+      refreshSessionCookie(username);
+    }
+  }
+
+  private static void replaceAuthorities(UserEntity user, Set<String> authorities) {
+    user.getAuthorities().removeIf(authority -> !authorities.contains(authority.getAuthority()));
+    Set<String> existingAuthorities =
+        user.getAuthorities().stream()
+            .map(AuthorityEntity::getAuthority)
+            .collect(Collectors.toSet());
+    for (String authority : authorities) {
+      if (existingAuthorities.add(authority)) {
+        user.getAuthorities()
+            .add(AuthorityEntity.builder().authority(authority).user(user).build());
       }
     }
   }
 
+  @Transactional
   @McpTool(
       name = "patch_user",
       description = "Change a user password by supplying the old and new password.")
@@ -227,20 +256,18 @@ public class GlobalService {
           long userId,
       @McpToolParam(description = "The old and new password.", required = true) @Valid
           PatchUserDto patchUserDto) {
-    if (patchUserDto.getOldPassword() == patchUserDto.getNewPassword()) {
+    if (patchUserDto.getOldPassword().equals(patchUserDto.getNewPassword())) {
       throw new IllegalArgumentException("Old and new passwords cannot be the same");
     }
-    UserEntity user = getUser(userId);
+    UserEntity user = resolveUser(userId);
     try {
       authenticationManager.authenticate(
           new UsernamePasswordAuthenticationToken(
               user.getUsername(), patchUserDto.getOldPassword()));
-    } catch (AuthenticationException e) {
+    } catch (AuthenticationException exception) {
       throw new IllegalArgumentException("Old password is incorrect");
     }
     user.setPassword(passwordEncoder.encode(patchUserDto.getNewPassword()));
-    user.setPlainStringPassword(patchUserDto.getNewPassword());
-    userRepository.save(user);
   }
 
   @Transactional
@@ -250,7 +277,7 @@ public class GlobalService {
   public void deleteUser(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
           long userId) {
-    UserEntity user = getUser(userId);
+    UserEntity user = resolveUser(userId);
     long currentUserId = getCurrentUserOrThrow().getId();
     userRepository.delete(user);
     if (user.getId() == currentUserId) {
@@ -261,16 +288,16 @@ public class GlobalService {
     }
   }
 
-  @CircuitBreaker(name = "todo")
+  @Transactional
   @McpTool(
       name = "create_todo",
       description = "Create a todo for a user. New todos start with status NOT_STARTED.")
-  public TodoEntity createUserTodo(
+  public TodoResponseDto createUserTodo(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
           long userId,
       @McpToolParam(description = "The todo to create.", required = true) @Valid
           CreateTodoDto createTodoDto) {
-    UserEntity user = getUser(userId);
+    UserEntity user = resolveUser(userId);
     TodoEntity todo =
         TodoEntity.builder()
             .title(createTodoDto.getTitle())
@@ -278,26 +305,28 @@ public class GlobalService {
             .status(StatusEnum.NOT_STARTED)
             .user(user)
             .build();
-    return todoRepository.save(todo);
+    return TodoResponseDto.from(todoRepository.save(todo));
   }
 
+  @Transactional(readOnly = true)
   @McpTool(name = "get_todo", description = "Get a single todo by id.")
-  public TodoEntity getUserTodo(
+  public TodoResponseDto getUserTodo(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
           long userId,
       @McpToolParam(description = "The todo id.", required = true) long todoId) {
-    UserEntity user = getUser(userId);
-    return todoRepository.findByUserIdAndId(user.getId(), todoId).get();
+    return TodoResponseDto.from(resolveTodo(resolveUser(userId), todoId));
   }
 
+  @Transactional(readOnly = true)
   @McpTool(name = "get_todos", description = "List every todo belonging to a user.")
-  public List<TodoEntity> getUserTodos(
+  public List<TodoResponseDto> getUserTodos(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
           long userId) {
-    UserEntity user = getUser(userId);
-    return todoRepository.findByUserId(user.getId());
+    UserEntity user = resolveUser(userId);
+    return todoRepository.findByUserId(user.getId()).stream().map(TodoResponseDto::from).toList();
   }
 
+  @Transactional
   @McpTool(name = "update_todo", description = "Replace the title and/or description of a todo.")
   public void updateUserTodo(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
@@ -305,22 +334,22 @@ public class GlobalService {
       @McpToolParam(description = "The todo id.", required = true) long todoId,
       @McpToolParam(description = "The new title and/or description.", required = true) @Valid
           UpdateTodoDto updateTodoDto) {
-    if (updateTodoDto.getTitle() == null && updateTodoDto.getDescription() == null) {
+    String title = updateTodoDto.getTitle();
+    String description = updateTodoDto.getDescription();
+    if (title == null && description == null) {
       throw new IllegalArgumentException(
           "One of title or description must be provided for updateUserTodo operation");
     }
-    TodoEntity todo = getUserTodo(userId, todoId);
-    String title = updateTodoDto.getTitle();
-    if (title != null && !title.equals(todo.getTitle())) {
+    TodoEntity todo = resolveTodo(resolveUser(userId), todoId);
+    if (title != null) {
       todo.setTitle(title);
     }
-    String description = updateTodoDto.getDescription();
-    if (description != null && !description.equals(todo.getDescription())) {
+    if (description != null) {
       todo.setDescription(description);
     }
-    todoRepository.save(todo);
   }
 
+  @Transactional
   @McpTool(name = "patch_todo", description = "Change the status of a todo.")
   public void patchUserTodo(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
@@ -328,21 +357,17 @@ public class GlobalService {
       @McpToolParam(description = "The todo id.", required = true) long todoId,
       @McpToolParam(description = "The new todo status.", required = true) @Valid
           PatchTodoDto patchTodoDto) {
-    TodoEntity todo = getUserTodo(userId, todoId);
-    if (!todo.getStatus().equals(patchTodoDto.getStatus())) {
-      todo.setStatus(patchTodoDto.getStatus());
-      todoRepository.save(todo);
-    }
+    TodoEntity todo = resolveTodo(resolveUser(userId), todoId);
+    todo.setStatus(patchTodoDto.getStatus());
   }
 
+  @Transactional
   @McpTool(name = "delete_todo", description = "Delete a single todo by id.")
   public void deleteUserTodo(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
           long userId,
       @McpToolParam(description = "The todo id.", required = true) long todoId) {
-    TodoEntity todo = getUserTodo(userId, todoId);
-    todo.getUser().getTodos().remove(todo);
-    todoRepository.delete(todo);
+    todoRepository.delete(resolveTodo(resolveUser(userId), todoId));
   }
 
   @Transactional
@@ -350,7 +375,7 @@ public class GlobalService {
   public void deleteUserTodos(
       @McpToolParam(description = "The user id, or 0 for the current user.", required = true)
           long userId) {
-    UserEntity user = getUser(userId);
+    UserEntity user = resolveUser(userId);
     todoRepository.deleteAllByUserId(user.getId());
   }
 }

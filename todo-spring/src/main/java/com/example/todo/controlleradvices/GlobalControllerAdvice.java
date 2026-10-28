@@ -1,72 +1,74 @@
 package com.example.todo.controlleradvices;
 
-import com.auth0.jwt.exceptions.AlgorithmMismatchException;
-import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.example.todo.exceptions.ConflictException;
+import jakarta.validation.ConstraintViolationException;
 import java.util.NoSuchElementException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalControllerAdvice {
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<String> handleException(Exception e) {
-    e.printStackTrace();
-    return ResponseEntity.badRequest().body("Error handling request");
-  }
-
   @ExceptionHandler(NoResourceFoundException.class)
-  public ResponseEntity<String> handleNoResourceFoundException(NoResourceFoundException e) {
-    return ResponseEntity.notFound().build();
+  public ResponseEntity<String> handleNoResourceFoundException(NoResourceFoundException exception) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Resource not found");
   }
 
-  @ExceptionHandler({AuthenticationException.class, SessionAuthenticationException.class})
-  public ResponseEntity<String> handleAuthenticationException(Exception e) {
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<String> handleAuthenticationException(AuthenticationException exception) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
   }
 
   @ExceptionHandler(AuthorizationDeniedException.class)
-  public ResponseEntity<String> handleAuthorizationException(AuthorizationDeniedException e) {
+  public ResponseEntity<String> handleAuthorizationDeniedException(
+      AuthorizationDeniedException exception) {
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Forbidden");
   }
 
-  @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException e) {
-    return ResponseEntity.badRequest().body(e.getMessage());
-  }
-
   @ExceptionHandler(NoSuchElementException.class)
-  public ResponseEntity<String> handleNoSuchElementException(NoSuchElementException e) {
-    return ResponseEntity.badRequest().body("Element not found");
-  }
-
-  @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<String> handleMethodArgumentNotValidException(
-      MethodArgumentNotValidException e) {
-    return ResponseEntity.badRequest().body(e.getMessage());
+  public ResponseEntity<String> handleNoSuchElementException(NoSuchElementException exception) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Element not found");
   }
 
   @ExceptionHandler({
-    AlgorithmMismatchException.class,
-    TokenExpiredException.class,
-    JWTVerificationException.class,
-    JWTCreationException.class
+    IllegalArgumentException.class,
+    ConstraintViolationException.class,
+    MethodArgumentNotValidException.class,
+    HttpMessageNotReadableException.class
   })
-  public ResponseEntity<String> handleJwtException(Exception e) {
+  public ResponseEntity<String> handleBadRequestException(Exception exception) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
+  }
+
+  @ExceptionHandler(ConflictException.class)
+  public ResponseEntity<String> handleConflictException(ConflictException exception) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(exception.getMessage());
+  }
+
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<String> handleDataIntegrityViolationException(
+      DataIntegrityViolationException exception) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body("Data conflict");
+  }
+
+  @ExceptionHandler(JWTVerificationException.class)
+  public ResponseEntity<String> handleJwtVerificationException(JWTVerificationException exception) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
   }
 
-  @ExceptionHandler(RuntimeException.class)
-  public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
-    e.printStackTrace();
-    return ResponseEntity.internalServerError().body("Runtime error handling request");
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<String> handleException(Exception exception) {
+    log.error("Unhandled request error", exception);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error handling request");
   }
 }

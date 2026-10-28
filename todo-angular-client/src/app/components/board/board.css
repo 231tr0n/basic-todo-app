@@ -221,3 +221,18 @@ mat-card-footer {
 		min-height: 260px;
 	}
 }
+
+@media (width <= 600px) {
+	.board-page {
+		gap: 12px;
+		padding: 16px;
+	}
+
+	.board-header h1 {
+		font: var(--mat-sys-headline-small);
+	}
+
+	.signed-out {
+		padding: 24px;
+	}
+}

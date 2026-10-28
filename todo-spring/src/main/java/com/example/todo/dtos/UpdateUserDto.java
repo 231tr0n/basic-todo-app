@@ -3,18 +3,12 @@ package com.example.todo.dtos;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Size;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
 public class UpdateUserDto {
   @JsonProperty(required = false)
@@ -22,6 +16,6 @@ public class UpdateUserDto {
   private String username;
 
   @JsonProperty(required = false)
-  @Size(min = 0, max = 10)
+  @Size(max = 10)
   private Set<String> authorities;
 }
