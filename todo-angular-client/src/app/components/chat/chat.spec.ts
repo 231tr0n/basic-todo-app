@@ -263,6 +263,58 @@ describe('Chat', () => {
 		expect(internals.sessionData).toHaveLength(3);
 	});
 
+	it('clears the streamed draft when an assistant turn is finalised mid-run', async () => {
+		let partial: (text: string) => void = () => undefined;
+		let finishTurn: () => void = () => undefined;
+		let release: () => void = () => undefined;
+		aiChat.run.mockImplementationOnce(
+			(
+				_history: readonly ChatCompletionMessageParam[],
+				_model: string,
+				onMessage: (message: ChatCompletionMessageParam) => void,
+				onAssistantPartial?: (text: string) => void
+			) => {
+				if (onAssistantPartial) partial = onAssistantPartial;
+				finishTurn = () => {
+					// The first streamed turn lands in the session while the
+					// assistant keeps working (e.g. executing tool calls).
+					onMessage({ role: 'assistant', content: 'Finding corn' });
+				};
+				return new Promise<void>((resolve) => {
+					release = () => {
+						resolve();
+					};
+				});
+			}
+		);
+		internals.message = 'Hello';
+		const sending = internals.onSend();
+		fixture.detectChanges();
+		await fixture.whenStable();
+
+		partial('Finding corn');
+		fixture.detectChanges();
+		finishTurn();
+		fixture.detectChanges();
+
+		// The draft disappears as soon as its finalised message arrives...
+		expect(element.querySelector('[data-testid="streaming-assistant"]')).toBeFalsy();
+		expect(internals.sessionData).toHaveLength(3);
+
+		// ...and the next streamed turn is rendered without the old content.
+		partial('Found it');
+		fixture.detectChanges();
+		const draft = element.querySelector('[data-testid="streaming-assistant"]');
+		expect(draft?.textContent).toContain('Found it');
+		expect(draft?.textContent).not.toContain('Finding corn');
+
+		release();
+		await sending;
+		fixture.detectChanges();
+		await fixture.whenStable();
+		expect(element.querySelector('[data-testid="streaming-assistant"]')).toBeFalsy();
+	});
+
 	it('unpins when the user scrolls away from the bottom and re-pins at the bottom', () => {
 		const messagesDiv = query('.messages');
 		Object.defineProperty(messagesDiv, 'scrollHeight', { value: 1000, configurable: true });

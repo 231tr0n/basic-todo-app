@@ -288,6 +288,10 @@ export class Chat implements OnInit, OnDestroy {
 				this.selectedAiAgentModel,
 				(newMessage) => {
 					if (!this.isActive()) return;
+					if (newMessage.role === 'assistant') {
+						// The streamed draft is superseded by its finalised message.
+						this.streamedAssistant.set('');
+					}
 					this.sessionData = [...this.sessionData, newMessage];
 					this.autoScroll();
 				},
