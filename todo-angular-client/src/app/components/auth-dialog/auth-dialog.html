@@ -1,0 +1,64 @@
+<h2 mat-dialog-title>Account</h2>
+<mat-dialog-content>
+	<mat-tab-group [(selectedIndex)]="selectedIndex">
+		<mat-tab label="Sign in">
+			<div class="auth-form">
+				<mat-form-field>
+					<mat-label>Username</mat-label>
+					<input matInput name="signInUsername" autocomplete="username" [(ngModel)]="username" />
+				</mat-form-field>
+				<mat-form-field>
+					<mat-label>Password</mat-label>
+					<input
+						matInput
+						type="password"
+						name="signInPassword"
+						autocomplete="current-password"
+						[(ngModel)]="password" />
+				</mat-form-field>
+			</div>
+		</mat-tab>
+		<mat-tab label="Sign up">
+			<div class="auth-form">
+				<mat-form-field>
+					<mat-label>Username</mat-label>
+					<input matInput name="signUpUsername" autocomplete="username" [(ngModel)]="username" />
+				</mat-form-field>
+				<mat-form-field>
+					<mat-label>Password</mat-label>
+					<input
+						matInput
+						type="password"
+						name="signUpPassword"
+						autocomplete="new-password"
+						[(ngModel)]="password" />
+				</mat-form-field>
+				<mat-form-field>
+					<mat-label>Confirm password</mat-label>
+					<input
+						matInput
+						type="password"
+						name="signUpConfirmPassword"
+						autocomplete="new-password"
+						[(ngModel)]="confirmPassword" />
+				</mat-form-field>
+				<mat-checkbox name="admin" [(ngModel)]="admin">Administrator</mat-checkbox>
+			</div>
+		</mat-tab>
+	</mat-tab-group>
+	@if (error) {
+		<p class="error">{{ error }}</p>
+	}
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+	<button matButton type="button" (click)="cancel()">Cancel</button>
+	@if (selectedIndex === 0) {
+		<button matButton="filled" type="button" [disabled]="!valid || busy" (click)="signIn()">
+			Sign in
+		</button>
+	} @else {
+		<button matButton="filled" type="button" [disabled]="!valid || busy" (click)="signUp()">
+			Create account
+		</button>
+	}
+</mat-dialog-actions>

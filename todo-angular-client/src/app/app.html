@@ -1,0 +1,48 @@
+<mat-toolbar class="app-toolbar">
+	<mat-icon class="brand-icon">view_kanban</mat-icon>
+	<span class="brand">{{ title }}</span>
+	<nav class="app-nav">
+		<a
+			matButton
+			routerLink="/"
+			routerLinkActive="active-link"
+			[routerLinkActiveOptions]="{ exact: true }">
+			<mat-icon>dashboard</mat-icon>
+			Board
+		</a>
+		<a matButton routerLink="/chat" routerLinkActive="active-link">
+			<mat-icon>smart_toy</mat-icon>
+			Assistant
+		</a>
+	</nav>
+	<span class="spacer"></span>
+	<button
+		matIconButton
+		type="button"
+		[attr.aria-label]="darkMode ? 'Switch to light theme' : 'Switch to dark theme'"
+		(click)="toggleTheme()">
+		<mat-icon>{{ darkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
+	</button>
+	@if (store.user(); as user) {
+		<button matButton type="button" [matMenuTriggerFor]="userMenu">
+			<mat-icon>account_circle</mat-icon>
+			{{ user.username }}
+		</button>
+		<mat-menu #userMenu="matMenu">
+			<div class="menu-header">
+				<strong>{{ user.username }}</strong>
+				<span>{{ store.isAdmin() ? 'Administrator' : 'Member' }}</span>
+			</div>
+			<button mat-menu-item type="button" (click)="signOut()">
+				<mat-icon>logout</mat-icon>
+				<span>Sign out</span>
+			</button>
+		</mat-menu>
+	} @else {
+		<button matButton type="button" (click)="openAuth('sign-in')">Sign in</button>
+		<button matButton="filled" type="button" (click)="openAuth('sign-up')">Create account</button>
+	}
+</mat-toolbar>
+<main class="app-content">
+	<router-outlet />
+</main>

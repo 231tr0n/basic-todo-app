@@ -93,8 +93,9 @@ public class GlobalController {
   }
 
   @PostMapping("/users/{userId}/todos")
-  public void createTodo(@PathVariable long userId, @RequestBody CreateTodoDto createTodoDto) {
-    globalService.createUserTodo(userId, createTodoDto);
+  public TodoEntity createTodo(
+      @PathVariable long userId, @RequestBody CreateTodoDto createTodoDto) {
+    return globalService.createUserTodo(userId, createTodoDto);
   }
 
   @PutMapping("/users/{userId}/todos/{todoId}")

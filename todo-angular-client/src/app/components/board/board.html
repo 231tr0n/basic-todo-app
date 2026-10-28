@@ -1,0 +1,102 @@
+<div class="board-page">
+	<header class="board-header">
+		<div>
+			<h1>My board</h1>
+			<p class="subtitle">
+				{{ todoCount }} todo{{ todoCount === 1 ? '' : 's' }} · {{ completedCount }} completed
+			</p>
+		</div>
+		<div class="board-actions">
+			<button matButton type="button" [disabled]="!store.isAuthenticated()" (click)="onCreate()">
+				<mat-icon>add</mat-icon>
+				New todo
+			</button>
+			<button
+				matButton
+				type="button"
+				[disabled]="!store.isAuthenticated() || completedCount === 0"
+				(click)="onClearCompleted()">
+				<mat-icon>cleaning_services</mat-icon>
+				Clear completed
+			</button>
+		</div>
+	</header>
+
+	@if (store.loading()) {
+		<mat-progress-bar mode="indeterminate" />
+	}
+
+	@if (!store.isAuthenticated()) {
+		<section class="signed-out">
+			<mat-icon>lock</mat-icon>
+			<h2>Sign in to see your board</h2>
+			<p>Your todos are private. Sign in or create an account to start planning.</p>
+			<button matButton="filled" type="button" (click)="onSignIn()">
+				<mat-icon>login</mat-icon>
+				Sign in
+			</button>
+		</section>
+	} @else {
+		<div class="board" cdkDropListGroup>
+			@for (column of store.columns(); track column.status) {
+				<section [class]="`column ${column.accent}`">
+					<header class="column-header">
+						<mat-icon>{{ column.icon }}</mat-icon>
+						<h2>{{ column.title }}</h2>
+						<span class="count">{{ column.todos.length }}</span>
+						<button
+							matIconButton
+							type="button"
+							[matTooltip]="`Add a todo to ${column.title}`"
+							(click)="onCreate(column.status)">
+							<mat-icon>add</mat-icon>
+						</button>
+					</header>
+					<div
+						class="drop-list"
+						cdkDropList
+						[id]="column.status"
+						[cdkDropListData]="column.todos"
+						(cdkDropListDropped)="onDrop($event)">
+						@for (todo of column.todos; track todo.id) {
+							<mat-card cdkDrag class="todo-card" appearance="outlined" [cdkDragData]="todo">
+								<mat-card-content>
+									<div class="todo-card-header">
+										<h3>{{ todo.title }}</h3>
+										<button matIconButton type="button" [matMenuTriggerFor]="todoMenu">
+											<mat-icon>more_vert</mat-icon>
+										</button>
+										<mat-menu #todoMenu="matMenu">
+											<button mat-menu-item type="button" (click)="onEdit(todo)">
+												<mat-icon>edit</mat-icon>
+												<span>Edit</span>
+											</button>
+											<button mat-menu-item type="button" (click)="onDelete(todo)">
+												<mat-icon>delete</mat-icon>
+												<span>Delete</span>
+											</button>
+										</mat-menu>
+									</div>
+									<p>{{ todo.description }}</p>
+								</mat-card-content>
+								<mat-card-footer>
+									<span class="status-chip">{{ column.title }}</span>
+									<span class="todo-id">#{{ todo.id }}</span>
+								</mat-card-footer>
+							</mat-card>
+						} @empty {
+							<div class="empty-column">
+								<mat-icon>drag_indicator</mat-icon>
+								<span>Drop todos here</span>
+							</div>
+						}
+					</div>
+					<button matButton class="column-add" type="button" (click)="onCreate(column.status)">
+						<mat-icon>add</mat-icon>
+						Add todo
+					</button>
+				</section>
+			}
+		</div>
+	}
+</div>
