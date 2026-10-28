@@ -3,13 +3,13 @@ import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
-import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 @Pipe({
 	name: 'chatCompletionMessageParamMarkdownToHtml'
 })
 export class ChatCompletionMessageParamMarkdownToHtmlPipe implements PipeTransform {
-	marked = new Marked(
+	private readonly marked = new Marked(
 		markedHighlight({
 			emptyLangClass: 'hljs',
 			langPrefix: 'hljs language-',
@@ -21,10 +21,8 @@ export class ChatCompletionMessageParamMarkdownToHtmlPipe implements PipeTransfo
 	);
 
 	transform(value: ChatCompletionMessageParam): string {
-		if (typeof value.content === 'string')
-			return DOMPurify.sanitize(this.marked.parse(value.content) as string);
-		return DOMPurify.sanitize(
-			this.marked.parse(`\`\`\`json\nJSON.stringify(value, null, 2)\n\`\`\``) as string
-		);
+		const content =
+			typeof value.content === 'string' ? value.content : JSON.stringify(value, null, 2);
+		return DOMPurify.sanitize(this.marked.parse(content) as string);
 	}
 }

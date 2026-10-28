@@ -8,4 +8,6 @@ import { RouterOutlet } from '@angular/router';
 	styleUrl: './app.css',
 	changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class App {}
+export class App {
+	readonly title = 'AI MCP Todo Chat';
+}

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import {
 	CreateTodoDto,
 	PatchTodoDto,
@@ -12,34 +12,52 @@ import {
 	UserDto
 } from '../types/types';
 import { BehaviorSubject, tap } from 'rxjs';
-import { BASE_URL, CURRENT_USER_ID } from '../constants';
+import { AppConfiguration } from '../config/app-configuration';
 
-@Injectable({
-	providedIn: 'root'
-})
+@Service()
 export class GlobalApi {
 	private readonly http = inject(HttpClient);
+	private readonly configuration = inject(AppConfiguration);
 
 	readonly loggedInUser = new BehaviorSubject<UserDto | null>(null);
 
 	constructor() {
-		this.getUser().subscribe((user) => {
-			this.loggedInUser.next(user);
+		this.refreshLoggedInUser();
+	}
+
+	private refreshLoggedInUser() {
+		this.getUser().subscribe({
+			next: (user) => {
+				this.loggedInUser.next(user);
+			},
+			error: () => {
+				this.loggedInUser.next(null);
+			}
 		});
 	}
 
+	private get baseUrl() {
+		return this.configuration.apiBaseUrl;
+	}
+
+	private get currentUserId() {
+		return this.configuration.currentUserId;
+	}
+
 	signIn(dto: SignInDto) {
-		return this.http.post(`${BASE_URL}/signin`, dto).pipe(
-			tap(() => {
-				this.getUser().subscribe((user) => {
-					this.loggedInUser.next(user);
-				});
+		return this.http
+			.post(`${this.baseUrl}/signin`, dto, {
+				withCredentials: true
 			})
-		);
+			.pipe(
+				tap(() => {
+					this.refreshLoggedInUser();
+				})
+			);
 	}
 
 	signUp(dto: SignUpDto) {
-		return this.http.post(`${BASE_URL}/signup`, dto, {
+		return this.http.post(`${this.baseUrl}/signup`, dto, {
 			withCredentials: true
 		});
 	}
@@ -47,7 +65,7 @@ export class GlobalApi {
 	signOut() {
 		return this.http
 			.post(
-				`${BASE_URL}/signout`,
+				`${this.baseUrl}/signout`,
 				{},
 				{
 					withCredentials: true
@@ -61,66 +79,72 @@ export class GlobalApi {
 	}
 
 	getUsers() {
-		return this.http.get<UserDto[]>(`${BASE_URL}/users`, {
+		return this.http.get<UserDto[]>(`${this.baseUrl}/users`, {
 			withCredentials: true
 		});
 	}
 
 	getUser(userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		return this.http.get<UserDto>(`${BASE_URL}/users/${userId.toString()}`, {
-			withCredentials: true
-		});
+		return this.http.get<UserDto>(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}`,
+			{
+				withCredentials: true
+			}
+		);
 	}
 
 	deleteUser(userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		const subscription = this.http.delete(`${BASE_URL}/users/${userId.toString()}`, {
+		const targetUserId = userId ?? this.currentUserId;
+		const request = this.http.delete(`${this.baseUrl}/users/${targetUserId.toString()}`, {
 			withCredentials: true
 		});
-		if (userId === CURRENT_USER_ID) {
-			return subscription.pipe(
+		if (targetUserId === this.currentUserId) {
+			return request.pipe(
 				tap(() => {
 					this.loggedInUser.next(null);
 				})
 			);
 		}
-		return subscription;
+		return request;
 	}
 
 	patchUser(dto: PatchUserDto, userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		return this.http.patch(`${BASE_URL}/users/${userId.toString()}`, dto, {
-			withCredentials: true
-		});
+		return this.http.patch(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}`,
+			dto,
+			{
+				withCredentials: true
+			}
+		);
 	}
 
 	updateUser(dto: UpdateUserDto, userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		const subscription = this.http.put(`${BASE_URL}/users/${userId.toString()}`, dto, {
+		const targetUserId = userId ?? this.currentUserId;
+		const request = this.http.put(`${this.baseUrl}/users/${targetUserId.toString()}`, dto, {
 			withCredentials: true
 		});
-		if (userId === CURRENT_USER_ID) {
-			return subscription.pipe(
+		if (targetUserId === this.currentUserId) {
+			return request.pipe(
 				tap(() => {
-					this.getUser().subscribe();
+					this.refreshLoggedInUser();
 				})
 			);
 		}
-		return subscription;
+		return request;
 	}
 
 	getTodos(userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		return this.http.get<TodoDto[]>(`${BASE_URL}/users/${userId.toString()}/todos`, {
-			withCredentials: true
-		});
+		return this.http.get<TodoDto[]>(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos`,
+			{
+				withCredentials: true
+			}
+		);
 	}
 
 	getTodo(todoId: number, userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
 		return this.http.get<TodoDto>(
-			`${BASE_URL}/users/${userId.toString()}/todos/${todoId.toString()}`,
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos/${todoId.toString()}`,
 			{
 				withCredentials: true
 			}
@@ -128,23 +152,28 @@ export class GlobalApi {
 	}
 
 	createTodo(dto: CreateTodoDto, userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		return this.http.post(`${BASE_URL}/users/${userId.toString()}/todos`, dto, {
-			withCredentials: true
-		});
+		return this.http.post(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos`,
+			dto,
+			{
+				withCredentials: true
+			}
+		);
 	}
 
 	updateTodo(dto: UpdateTodoDto, todoId: number, userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		return this.http.put(`${BASE_URL}/users/${userId.toString()}/todos/${todoId.toString()}`, dto, {
-			withCredentials: true
-		});
+		return this.http.put(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos/${todoId.toString()}`,
+			dto,
+			{
+				withCredentials: true
+			}
+		);
 	}
 
 	patchTodo(dto: PatchTodoDto, todoId: number, userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
 		return this.http.patch(
-			`${BASE_URL}/users/${userId.toString()}/todos/${todoId.toString()}`,
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos/${todoId.toString()}`,
 			dto,
 			{
 				withCredentials: true
@@ -153,16 +182,20 @@ export class GlobalApi {
 	}
 
 	deleteTodo(todoId: number, userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		return this.http.delete(`${BASE_URL}/users/${userId.toString()}/todos/${todoId.toString()}`, {
-			withCredentials: true
-		});
+		return this.http.delete(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos/${todoId.toString()}`,
+			{
+				withCredentials: true
+			}
+		);
 	}
 
 	deleteTodos(userId?: number) {
-		userId = userId ?? CURRENT_USER_ID;
-		return this.http.delete(`${BASE_URL}/users/${userId.toString()}/todos`, {
-			withCredentials: true
-		});
+		return this.http.delete(
+			`${this.baseUrl}/users/${(userId ?? this.currentUserId).toString()}/todos`,
+			{
+				withCredentials: true
+			}
+		);
 	}
 }

@@ -3,16 +3,16 @@ import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
-import {
+import type {
 	ChatCompletionAssistantMessageParam,
 	ChatCompletionMessageParam
-} from 'openai/resources/index.mjs';
+} from 'openai/resources/chat/completions';
 
 @Pipe({
 	name: 'chatCompletionMessageToolCallToMarkdownHtmlPipe'
 })
 export class ChatCompletionMessageToolCallToMarkdownHtmlPipePipe implements PipeTransform {
-	marked = new Marked(
+	private readonly marked = new Marked(
 		markedHighlight({
 			emptyLangClass: 'hljs',
 			langPrefix: 'hljs language-',
@@ -26,14 +26,19 @@ export class ChatCompletionMessageToolCallToMarkdownHtmlPipePipe implements Pipe
 	transform(value: ChatCompletionMessageParam): string {
 		const assistantMessage = value as ChatCompletionAssistantMessageParam;
 		if (!assistantMessage.tool_calls) return '';
+
 		let content = '';
-		assistantMessage.tool_calls.forEach((toolCall) => {
-			if (toolCall.type !== 'function') return;
+		for (const toolCall of assistantMessage.tool_calls) {
+			if (toolCall.type !== 'function') continue;
 			content += `\`\`${toolCall.id} - ${toolCall.function.name}\`\``;
 			content += `\n\`\`\`json\n`;
-			content += JSON.stringify(JSON.parse(toolCall.function.arguments), null, 2);
+			try {
+				content += JSON.stringify(JSON.parse(toolCall.function.arguments), null, 2);
+			} catch {
+				content += toolCall.function.arguments;
+			}
 			content += `\n\`\`\`\n`;
-		});
+		}
 		return DOMPurify.sanitize(this.marked.parse(content) as string);
 	}
 }
