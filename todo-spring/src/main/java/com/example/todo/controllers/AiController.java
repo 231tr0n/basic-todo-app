@@ -4,6 +4,8 @@ import com.example.todo.configurations.TodoConfigurationProperties;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -16,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @RestController
 @RequestMapping(AiController.API_PREFIX)
@@ -35,7 +38,7 @@ public class AiController {
   }
 
   @RequestMapping("/**")
-  public ResponseEntity<byte[]> proxy(
+  public ResponseEntity<StreamingResponseBody> proxy(
       HttpServletRequest request, @RequestBody(required = false) byte[] body)
       throws IOException, InterruptedException {
     HttpRequest.Builder requestBuilder =
@@ -49,16 +52,28 @@ public class AiController {
     copyHeader(request, requestBuilder, HttpHeaders.AUTHORIZATION);
     copyHeader(request, requestBuilder, HttpHeaders.CONTENT_TYPE);
     copyHeader(request, requestBuilder, HttpHeaders.ACCEPT);
-
-    HttpResponse<byte[]> response =
-        httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofByteArray());
+    // Stream the provider response as it arrives instead of buffering the whole body, so
+    // server-sent event chunks from chat completions reach the browser immediately.
+    HttpResponse<InputStream> response =
+        httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream());
     ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(response.statusCode());
     response
         .headers()
         .firstValue(HttpHeaders.CONTENT_TYPE)
         .ifPresent(
             contentType -> responseBuilder.contentType(MediaType.parseMediaType(contentType)));
-    return responseBuilder.body(response.body());
+    return responseBuilder.body(output -> copyResponseBody(response.body(), output));
+  }
+
+  private static void copyResponseBody(InputStream source, OutputStream target) throws IOException {
+    try (InputStream input = source) {
+      byte[] buffer = new byte[8192];
+      int read;
+      while ((read = input.read(buffer)) != -1) {
+        target.write(buffer, 0, read);
+        target.flush();
+      }
+    }
   }
 
   private URI providerUri(HttpServletRequest request) {

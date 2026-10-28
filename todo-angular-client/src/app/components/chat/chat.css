@@ -118,6 +118,15 @@ mat-card-title {
 	margin: 5px;
 }
 
+.jump-to-latest {
+	background: var(--mat-sys-surface-container-highest);
+	bottom: 110px;
+	box-shadow: var(--mat-sys-level2);
+	position: fixed;
+	right: 32px;
+	z-index: 10;
+}
+
 .chat-welcome {
 	align-items: center;
 	color: var(--mat-sys-on-surface-variant);

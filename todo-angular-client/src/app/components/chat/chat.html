@@ -29,7 +29,7 @@
 	</header>
 
 	<div class="chat-box">
-		<div #scrollable class="messages">
+		<div #scrollable class="messages" (scroll)="onNativeScroll()">
 			@if (sessionData.length <= 1) {
 				<div class="chat-welcome">
 					<mat-icon>smart_toy</mat-icon>
@@ -76,6 +76,18 @@
 					</mat-card>
 				</div>
 			}
+			@if (streaming) {
+				<div class="message" data-testid="streaming-assistant">
+					<mat-card class="message-card" appearance="outlined">
+						<mat-card-header>
+							<mat-card-title>Assistant</mat-card-title>
+						</mat-card-header>
+						<mat-card-content>
+							<div [innerHTML]="streamingDraft | chatCompletionMessageParamMarkdownToHtml"></div>
+						</mat-card-content>
+					</mat-card>
+				</div>
+			}
 			@if (activeWidget(); as widget) {
 				<div class="message widget">
 					<app-ui-dialog [data]="widget.data" (resolved)="onWidgetResolved(widget.id, $event)" />
@@ -102,9 +114,17 @@
 				(click)="onClear($event)">
 				<mat-icon>delete</mat-icon>
 			</button>
-			<button matMiniFab matSuffix class="action-button" type="button" (click)="onScroll($event)">
-				<mat-icon>arrow_circle_down</mat-icon>
-			</button>
+			@if (showJumpButton) {
+				<button
+					matMiniFab
+					matSuffix
+					class="action-button jump-to-latest"
+					type="button"
+					matTooltip="Jump to the latest messages"
+					(click)="onScroll($event)">
+					<mat-icon>arrow_circle_down</mat-icon>
+				</button>
+			}
 			<button
 				matMiniFab
 				matSuffix

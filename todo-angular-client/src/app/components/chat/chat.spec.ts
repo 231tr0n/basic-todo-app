@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { provideRouter } from '@angular/router';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { vi } from 'vitest';
+import type { Mock } from 'vitest';
 
 import { Chat } from './chat';
 import { AiChat } from '../../services/ai-chat';
@@ -20,20 +21,31 @@ interface ChatInternals {
 	ngOnInit(): void;
 	onRefreshAiAgentModels(event?: MouseEvent): Promise<void>;
 	onDebugModeChange(enabled: boolean): void;
+	onNativeScroll(): void;
 	ngOnDestroy(): void;
 }
+
+interface AiChatMock {
+	initialize: ReturnType<typeof vi.fn>;
+	dispose: ReturnType<typeof vi.fn>;
+	listModels: ReturnType<typeof vi.fn>;
+	listToolGroups: ReturnType<typeof vi.fn>;
+	run: Mock<RunMock>;
+}
+
+/** Shape of AiChat.run, so implementations may resolve after streaming callbacks. */
+type RunMock = (
+	history: readonly ChatCompletionMessageParam[],
+	model: string,
+	onMessage: (message: ChatCompletionMessageParam) => void,
+	onAssistantPartial?: (text: string) => void
+) => Promise<void>;
 
 describe('Chat', () => {
 	let component: Chat;
 	let fixture: ComponentFixture<Chat>;
 	let internals: ChatInternals;
-	let aiChat: {
-		initialize: ReturnType<typeof vi.fn>;
-		dispose: ReturnType<typeof vi.fn>;
-		listModels: ReturnType<typeof vi.fn>;
-		listToolGroups: ReturnType<typeof vi.fn>;
-		run: ReturnType<typeof vi.fn>;
-	};
+	let aiChat: AiChatMock;
 	let globalApi: { refreshLoggedInUser: ReturnType<typeof vi.fn> };
 	let snackBar: { open: ReturnType<typeof vi.fn> };
 	let uiDialog: UiDialogService;
@@ -67,7 +79,7 @@ describe('Chat', () => {
 					]
 				}
 			]),
-			run: vi.fn().mockResolvedValue(undefined)
+			run: vi.fn<RunMock>().mockResolvedValue(undefined)
 		};
 		globalApi = { refreshLoggedInUser: vi.fn() };
 		snackBar = { open: vi.fn() };
@@ -147,7 +159,12 @@ describe('Chat', () => {
 		await fixture.whenStable();
 
 		expect(composerDisabled()).toBe(true);
-		expect(aiChat.run).toHaveBeenCalledWith(expect.any(Array), 'test-model', expect.any(Function));
+		expect(aiChat.run).toHaveBeenCalledWith(
+			expect.any(Array),
+			'test-model',
+			expect.any(Function),
+			expect.anything()
+		);
 
 		release();
 		await sending;
@@ -181,11 +198,12 @@ describe('Chat', () => {
 	it('adds assistant messages delivered by a running request', async () => {
 		aiChat.run.mockImplementationOnce(
 			(
-				_history: ChatCompletionMessageParam[],
+				_history: readonly ChatCompletionMessageParam[],
 				_model: string,
 				onMessage: (message: ChatCompletionMessageParam) => void
 			) => {
 				onMessage({ role: 'assistant', content: 'Hello from the model' });
+				return Promise.resolve();
 			}
 		);
 		internals.message = 'Hello';
@@ -197,15 +215,105 @@ describe('Chat', () => {
 		);
 	});
 
+	it('streams the assistant reply while the request is running and clears it after', async () => {
+		let release: () => void = () => undefined;
+		let partial: (text: string) => void = () => undefined;
+		aiChat.run.mockImplementationOnce(
+			(
+				_history: readonly ChatCompletionMessageParam[],
+				_model: string,
+				onMessage: (message: ChatCompletionMessageParam) => void,
+				onAssistantPartial?: (text: string) => void
+			) => {
+				if (onAssistantPartial) partial = onAssistantPartial;
+				return new Promise<void>((resolve) => {
+					release = () => {
+						// The stream ends and the final assistant message is appended.
+						onMessage({ role: 'assistant', content: 'Hello' });
+						resolve();
+					};
+				});
+			}
+		);
+		internals.message = 'Hello';
+
+		const sending = internals.onSend();
+		fixture.detectChanges();
+		await fixture.whenStable();
+
+		expect(element.querySelector('[data-testid="streaming-assistant"]')).toBeFalsy();
+
+		partial('He');
+		partial('Hello');
+		fixture.detectChanges();
+		await fixture.whenStable();
+
+		const draft = element.querySelector('[data-testid="streaming-assistant"]');
+		expect(draft).toBeTruthy();
+		expect(draft?.textContent).toContain('Hello');
+		expect(composerDisabled()).toBe(true);
+
+		release();
+		await sending;
+		fixture.detectChanges();
+		await fixture.whenStable();
+
+		expect(element.querySelector('[data-testid="streaming-assistant"]')).toBeFalsy();
+		// The streamed draft is replaced by the finalised message in the conversation.
+		expect(internals.sessionData).toHaveLength(3);
+	});
+
+	it('unpins when the user scrolls away from the bottom and re-pins at the bottom', () => {
+		const messagesDiv = query('.messages');
+		Object.defineProperty(messagesDiv, 'scrollHeight', { value: 1000, configurable: true });
+		Object.defineProperty(messagesDiv, 'clientHeight', { value: 500, configurable: true });
+
+		Object.defineProperty(messagesDiv, 'scrollTop', { value: 0, configurable: true });
+		messagesDiv.dispatchEvent(new Event('scroll'));
+		fixture.detectChanges();
+		expect(element.querySelector('.jump-to-latest')).toBeTruthy();
+
+		Object.defineProperty(messagesDiv, 'scrollTop', { value: 480, configurable: true });
+		messagesDiv.dispatchEvent(new Event('scroll'));
+		fixture.detectChanges();
+		expect(element.querySelector('.jump-to-latest')).toBeFalsy();
+	});
+
+	it('re-pins to the bottom when the jump button is used or a message is sent', async () => {
+		const messagesDiv = query('.messages');
+		Object.defineProperty(messagesDiv, 'scrollHeight', { value: 1000, configurable: true });
+		Object.defineProperty(messagesDiv, 'clientHeight', { value: 500, configurable: true });
+		Object.defineProperty(messagesDiv, 'scrollTop', { value: 0, configurable: true });
+		messagesDiv.dispatchEvent(new Event('scroll'));
+		fixture.detectChanges();
+		expect(element.querySelector('.jump-to-latest')).toBeTruthy();
+
+		const jump = query('.jump-to-latest') as HTMLElement;
+		jump.click();
+		fixture.detectChanges();
+		expect(element.querySelector('.jump-to-latest')).toBeFalsy();
+
+		Object.defineProperty(messagesDiv, 'scrollTop', { value: 0, configurable: true });
+		messagesDiv.dispatchEvent(new Event('scroll'));
+		fixture.detectChanges();
+		expect(element.querySelector('.jump-to-latest')).toBeTruthy();
+
+		internals.message = 'Hello';
+		await internals.onSend();
+		fixture.detectChanges();
+		expect(element.querySelector('.jump-to-latest')).toBeFalsy();
+	});
+
 	it('ignores assistant messages delivered after the chat is destroyed', async () => {
 		aiChat.run.mockImplementationOnce(
 			(
-				_history: ChatCompletionMessageParam[],
+				_history: readonly ChatCompletionMessageParam[],
 				_model: string,
 				onMessage: (message: ChatCompletionMessageParam) => void
 			) => {
 				internals.ngOnDestroy();
 				onMessage({ role: 'assistant', content: 'Too late' });
+				return Promise.resolve();
 			}
 		);
 		internals.message = 'Hello';

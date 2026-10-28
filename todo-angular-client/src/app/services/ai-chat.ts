@@ -2,14 +2,31 @@ import { inject, Service } from '@angular/core';
 import { OpenAI } from 'openai';
 import type {
 	ChatCompletionAssistantMessageParam,
+	ChatCompletionChunk,
 	ChatCompletionFunctionTool,
 	ChatCompletionMessageParam,
 	ChatCompletionMessageToolCall
 } from 'openai/resources/chat/completions';
+import type { Stream } from 'openai/streaming';
 import { AppConfiguration } from '../config/app-configuration';
 import type { McpToolGroup } from '../types/mcp-tools';
 import { TodoMcpClient } from './todo-mcp-client';
 import { UiMcpServer } from './ui-mcp-server';
+
+/** The streamed assistant turn: the assembled message with its tool calls. */
+interface CompletedTurn {
+	readonly message: ChatCompletionAssistantMessageParam;
+	readonly toolCalls: ChatCompletionMessageToolCall[];
+}
+
+/** A tool call assembled from multiple streamed tool_call deltas. */
+interface StreamingToolCall {
+	index: number;
+	id: string;
+	type: 'function' | 'custom';
+	name: string;
+	arguments: string;
+}
 
 @Service()
 export class AiChat {
@@ -59,7 +76,8 @@ export class AiChat {
 	async run(
 		history: readonly ChatCompletionMessageParam[],
 		model: string,
-		onMessage: (message: ChatCompletionMessageParam) => void
+		onMessage: (message: ChatCompletionMessageParam) => void,
+		onAssistantPartial?: (text: string) => void
 	): Promise<void> {
 		if (this.running) {
 			throw new Error('A chat request is already running');
@@ -77,26 +95,25 @@ export class AiChat {
 			const messages: ChatCompletionMessageParam[] = [...history];
 
 			for (let iteration = 0; iteration < this.configuration.maxToolIterations; iteration++) {
-				const response = await this.openai.chat.completions.create(
+				const stream = await this.openai.chat.completions.create(
 					{
 						model,
 						messages,
 						temperature: this.configuration.aiTemperature,
+						stream: true,
 						...(tools.length > 0 ? { tools } : {})
 					},
 					{ signal }
 				);
 				if (this.isAborted(signal)) return;
 
-				const assistantMessage = response.choices[0].message;
-				const assistantMessageParam: ChatCompletionAssistantMessageParam = assistantMessage;
-				messages.push(assistantMessageParam);
-				onMessage(assistantMessageParam);
+				const turn = await this.consumeCompletionStream(stream, signal, onAssistantPartial);
+				if (!turn) return;
+				messages.push(turn.message);
+				onMessage(turn.message);
+				if (turn.toolCalls.length === 0) return;
 
-				const toolCalls = assistantMessage.tool_calls ?? [];
-				if (toolCalls.length === 0) return;
-
-				for (const toolCall of toolCalls) {
+				for (const toolCall of turn.toolCalls) {
 					const toolMessage = await this.runToolCall(toolCall);
 					if (this.isAborted(signal)) return;
 					messages.push(toolMessage);
@@ -122,6 +139,78 @@ export class AiChat {
 	private ensureAbortController(): AbortController {
 		this.abortController ??= new AbortController();
 		return this.abortController;
+	}
+
+	/**
+	 * Streams a single completions response, reporting content tokens through
+	 * onAssistantPartial as they arrive, and assembles the final assistant message
+	 * (including tool calls delivered across several deltas). Returns null when the
+	 * request was aborted, in which case no message is produced.
+	 */
+	private async consumeCompletionStream(
+		stream: Stream<ChatCompletionChunk>,
+		signal: AbortSignal,
+		onAssistantPartial: ((text: string) => void) | undefined
+	): Promise<CompletedTurn | null> {
+		let content = '';
+		let refusal = '';
+		const toolCalls = new Map<number, StreamingToolCall>();
+
+		for await (const chunk of stream) {
+			if (this.isAborted(signal)) return null;
+			if (chunk.choices.length === 0) continue;
+			const delta = chunk.choices[0].delta;
+			if (delta.content) {
+				content += delta.content;
+				onAssistantPartial?.(content);
+			}
+			if (delta.refusal) {
+				refusal += delta.refusal;
+			}
+			for (const toolCallDelta of delta.tool_calls ?? []) {
+				const pending = toolCalls.get(toolCallDelta.index) ?? {
+					index: toolCallDelta.index,
+					id: '',
+					type: toolCallDelta.type === 'custom' ? ('custom' as const) : ('function' as const),
+					name: '',
+					arguments: ''
+				};
+				if (toolCallDelta.id) pending.id = toolCallDelta.id;
+				if (toolCallDelta.function?.name) pending.name += toolCallDelta.function.name;
+				if (toolCallDelta.function?.arguments) {
+					pending.arguments += toolCallDelta.function.arguments;
+				}
+				if (toolCallDelta.custom?.name) pending.name += toolCallDelta.custom.name;
+				if (toolCallDelta.custom?.input) {
+					pending.arguments += toolCallDelta.custom.input;
+				}
+				toolCalls.set(toolCallDelta.index, pending);
+			}
+		}
+
+		const assembledToolCalls: ChatCompletionMessageToolCall[] = [...toolCalls.values()]
+			.sort((first, second) => first.index - second.index)
+			.filter((toolCall) => toolCall.id.length > 0 && toolCall.name.length > 0)
+			.map((toolCall) =>
+				toolCall.type === 'custom'
+					? {
+							id: toolCall.id,
+							type: 'custom' as const,
+							custom: { name: toolCall.name, input: toolCall.arguments }
+						}
+					: {
+							id: toolCall.id,
+							type: 'function' as const,
+							function: { name: toolCall.name, arguments: toolCall.arguments }
+						}
+			);
+		const message: ChatCompletionAssistantMessageParam = {
+			role: 'assistant',
+			content: content.length > 0 ? content : null,
+			refusal: refusal.length > 0 ? refusal : null,
+			...(assembledToolCalls.length > 0 ? { tool_calls: assembledToolCalls } : {})
+		};
+		return { message, toolCalls: assembledToolCalls };
 	}
 
 	private async mapTools(): Promise<ChatCompletionFunctionTool[]> {

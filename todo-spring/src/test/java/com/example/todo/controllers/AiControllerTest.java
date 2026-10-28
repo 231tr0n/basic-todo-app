@@ -4,10 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.todo.configurations.TodoConfigurationProperties;
 import com.sun.net.httpserver.HttpServer;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 class AiControllerTest {
   private final AtomicReference<ReceivedRequest> received = new AtomicReference<>();
@@ -40,11 +45,11 @@ class AiControllerTest {
     request.setContentType(MediaType.APPLICATION_JSON_VALUE);
     request.setContent(body);
 
-    ResponseEntity<byte[]> response = controller.proxy(request, body);
+    ResponseEntity<StreamingResponseBody> response = controller.proxy(request, body);
 
     assertThat(response.getStatusCode().value()).isEqualTo(201);
     assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
-    assertThat(response.getBody()).isEqualTo(responseBody);
+    assertThat(copiedBody(response)).isEqualTo(responseBody);
     ReceivedRequest captured = received.get();
     assertThat(captured.method()).isEqualTo("POST");
     assertThat(captured.path()).isEqualTo("/v1/chat/completions");
@@ -63,11 +68,11 @@ class AiControllerTest {
     MockHttpServletRequest request = new MockHttpServletRequest("GET", "/app/api/ai/models");
     request.setContextPath("/app");
 
-    ResponseEntity<byte[]> response = controller.proxy(request, null);
+    ResponseEntity<StreamingResponseBody> response = controller.proxy(request, null);
 
     assertThat(response.getStatusCode().value()).isEqualTo(200);
     assertThat(response.getHeaders().getContentType()).isNull();
-    assertThat(response.getBody()).isEqualTo(responseBody);
+    assertThat(copiedBody(response)).isEqualTo(responseBody);
     ReceivedRequest captured = received.get();
     assertThat(captured.method()).isEqualTo("GET");
     assertThat(captured.path()).isEqualTo("/v1/models");
@@ -79,9 +84,76 @@ class AiControllerTest {
   }
 
   @Test
+  void streamsChunkedResponsesWithoutBuffering() throws Exception {
+    CountDownLatch firstChunkSent = new CountDownLatch(1);
+    CountDownLatch gate = new CountDownLatch(1);
+    server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+    server.createContext(
+        "/",
+        exchange -> {
+          exchange.getResponseHeaders().set(HttpHeaders.CONTENT_TYPE, "text/event-stream");
+          exchange.sendResponseHeaders(200, 0);
+          OutputStream output = exchange.getResponseBody();
+          output.write("data: first\n\n".getBytes(StandardCharsets.UTF_8));
+          output.flush();
+          firstChunkSent.countDown();
+          try {
+            gate.await(5, TimeUnit.SECONDS);
+          } catch (InterruptedException _) {
+            Thread.currentThread().interrupt();
+          }
+          output.write("data: second\n\n".getBytes(StandardCharsets.UTF_8));
+          output.flush();
+          exchange.close();
+        });
+    server.start();
+    AiController controller =
+        new AiController(configuration("http://localhost:" + server.getAddress().getPort()));
+
+    ResponseEntity<StreamingResponseBody> response =
+        controller.proxy(new MockHttpServletRequest("POST", "/api/ai/chat/completions"), null);
+    assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.TEXT_EVENT_STREAM);
+
+    ByteArrayOutputStream captured = new ByteArrayOutputStream();
+    StreamingResponseBody streamingBody = Objects.requireNonNull(response.getBody());
+    Thread reader =
+        new Thread(
+            () -> {
+              try {
+                streamingBody.writeTo(captured);
+              } catch (IOException _) {
+                // The copy ends with the response body.
+              }
+            });
+    reader.start();
+    assertThat(firstChunkSent.await(5, TimeUnit.SECONDS)).isTrue();
+
+    // The first chunk must already be readable while the server is still waiting on the gate,
+    // which proves the proxy never buffers the whole body before answering.
+    long deadline = System.currentTimeMillis() + 2000;
+    String capturedSoFar = captured.toString(StandardCharsets.UTF_8);
+    while (System.currentTimeMillis() < deadline && !capturedSoFar.contains("first")) {
+      Thread.sleep(10);
+      capturedSoFar = captured.toString(StandardCharsets.UTF_8);
+    }
+    assertThat(capturedSoFar).contains("first").doesNotContain("second");
+
+    gate.countDown();
+    reader.join(5000);
+    assertThat(captured.toString(StandardCharsets.UTF_8)).contains("second");
+  }
+
+  @Test
   void closesItsHttpClientWhenShuttingDown() {
     AiController controller = new AiController(configuration("http://localhost:1"));
     controller.closeHttpClient();
+  }
+
+  private static byte[] copiedBody(ResponseEntity<StreamingResponseBody> response)
+      throws IOException {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    Objects.requireNonNull(response.getBody()).writeTo(output);
+    return output.toByteArray();
   }
 
   private String startServer(int status, String contentType, byte[] responseBody)

@@ -1,22 +1,34 @@
 import { TestBed } from '@angular/core/testing';
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import type {
+	ChatCompletionChunk,
+	ChatCompletionMessageParam,
+	ChatCompletionToolMessageParam
+} from 'openai/resources/chat/completions';
+import type { Stream } from 'openai/streaming';
 import { vi } from 'vitest';
+import type { Mock } from 'vitest';
 import { AppConfiguration } from '../config/app-configuration';
 import { AiChat } from './ai-chat';
 import { TodoMcpClient } from './todo-mcp-client';
 import { UiMcpServer } from './ui-mcp-server';
 
+/** The completions endpoint is only ever called for streaming chat completions here. */
+type CreateMock = (
+	body: unknown,
+	options?: { signal?: AbortSignal }
+) => Promise<Stream<ChatCompletionChunk>>;
+
 const openaiMock = vi.hoisted(() => ({
 	instances: [] as {
 		models: { list: ReturnType<typeof vi.fn> };
-		chat: { completions: { create: ReturnType<typeof vi.fn> } };
+		chat: { completions: { create: Mock<CreateMock> } };
 	}[]
 }));
 
 vi.mock('openai', () => ({
 	OpenAI: class {
 		models = { list: vi.fn() };
-		chat = { completions: { create: vi.fn() } };
+		chat = { completions: { create: vi.fn<CreateMock>() } };
 
 		constructor() {
 			openaiMock.instances.push(this);
@@ -33,7 +45,7 @@ interface MockClient {
 
 interface OpenAiStub {
 	models: { list: ReturnType<typeof vi.fn> };
-	chat: { completions: { create: ReturnType<typeof vi.fn> } };
+	chat: { completions: { create: Mock<CreateMock> } };
 }
 
 describe('AiChat', () => {
@@ -132,28 +144,86 @@ describe('AiChat', () => {
 		]);
 	});
 
-	it('runs a request without tool calls', async () => {
-		const assistant: ChatCompletionMessageParam = { role: 'assistant', content: 'Hello' };
-		openai.chat.completions.create.mockResolvedValue({ choices: [{ message: assistant }] });
+	it('streams a request without tool calls and requests a stream', async () => {
+		openai.chat.completions.create.mockResolvedValue(
+			streamOf(chunk({ role: 'assistant', content: 'Hello' }), chunk({ content: null }))
+		);
+		const received: ChatCompletionMessageParam[] = [];
+		const partials: string[] = [];
+
+		await chat.run(
+			[],
+			'model',
+			(message) => received.push(message),
+			(text) => partials.push(text)
+		);
+
+		expect(openai.chat.completions.create).toHaveBeenCalledWith(
+			expect.objectContaining({ stream: true, model: 'model' }),
+			expect.anything()
+		);
+		expect(partials).toEqual(['Hello']);
+		expect(received).toEqual([{ role: 'assistant', content: 'Hello', refusal: null }]);
+	});
+
+	it('keeps streaming assistant content across neighbouring deltas', async () => {
+		openai.chat.completions.create.mockResolvedValue(
+			streamOf(
+				chunk({ role: 'assistant', content: 'He' }),
+				chunk({ content: 'll' }),
+				chunk({ content: 'o' }),
+				chunk({ content: null })
+			)
+		);
+		const received: ChatCompletionMessageParam[] = [];
+		const partials: string[] = [];
+
+		await chat.run(
+			[],
+			'model',
+			(message) => received.push(message),
+			(text) => partials.push(text)
+		);
+
+		expect(partials).toEqual(['He', 'Hell', 'Hello']);
+		expect(received).toEqual([{ role: 'assistant', content: 'Hello', refusal: null }]);
+	});
+
+	it('assembles streamed refusals without marking them as content', async () => {
+		openai.chat.completions.create.mockResolvedValue(
+			streamOf(chunk({ role: 'assistant', refusal: 'Sorry, ' }), chunk({ refusal: 'not allowed' }))
+		);
 		const received: ChatCompletionMessageParam[] = [];
 
 		await chat.run([], 'model', (message) => received.push(message));
 
-		expect(received).toEqual([assistant]);
-		expect(openai.chat.completions.create).toHaveBeenCalledTimes(1);
+		expect(received).toEqual([{ role: 'assistant', content: null, refusal: 'Sorry, not allowed' }]);
 	});
 
 	it('runs backend tools and sends their output back to the model', async () => {
-		const toolCall = {
-			id: 'call-1',
-			type: 'function',
-			function: { name: 'get_todos', arguments: '{"limit":5}' }
-		};
 		openai.chat.completions.create
-			.mockResolvedValueOnce({
-				choices: [{ message: { role: 'assistant', content: null, tool_calls: [toolCall] } }]
-			})
-			.mockResolvedValueOnce({ choices: [{ message: { role: 'assistant', content: 'Done' } }] });
+			.mockResolvedValueOnce(
+				streamOf(
+					chunk({
+						role: 'assistant',
+						tool_calls: [
+							{
+								index: 0,
+								id: 'call-1',
+								type: 'function',
+								function: { name: 'get_todos', arguments: '{"limit":' }
+							}
+						]
+					}),
+					chunk({
+						tool_calls: [{ index: 0, function: { arguments: '5}' } }]
+					}),
+					chunk({ content: null })
+				)
+			)
+			.mockResolvedValueOnce(
+				streamOf(chunk({ role: 'assistant', content: 'Done' }), chunk({ content: null }))
+			);
 		todoMcp.listTools.mockResolvedValue([
 			{ name: 'get_todos', description: 'List todos', inputSchema: { type: 'object' } }
 		]);
@@ -171,17 +241,85 @@ describe('AiChat', () => {
 		});
 	});
 
-	it('runs UI tools through the UI MCP server', async () => {
-		const toolCall = {
-			id: 'call-2',
-			type: 'function',
-			function: { name: 'ui_ask_text', arguments: '   ' }
-		};
+	it('keeps parallel tool calls in their streamed order', async () => {
 		openai.chat.completions.create
-			.mockResolvedValueOnce({
-				choices: [{ message: { role: 'assistant', content: null, tool_calls: [toolCall] } }]
-			})
-			.mockResolvedValueOnce({ choices: [{ message: { role: 'assistant', content: 'Okay' } }] });
+			.mockResolvedValueOnce(
+				streamOf(
+					chunk({
+						role: 'assistant',
+						tool_calls: [
+							{
+								index: 1,
+								id: 'call-2',
+								type: 'function',
+								function: { name: 'delete_todo', arguments: '{}' }
+							}
+						]
+					}),
+					chunk({
+						tool_calls: [
+							{
+								index: 0,
+								id: 'call-1',
+								type: 'function',
+								function: { name: 'get_todos', arguments: '{}' }
+							}
+						]
+					}),
+					chunk({ content: null })
+				)
+			)
+			.mockResolvedValueOnce(
+				streamOf(chunk({ role: 'assistant', content: 'Done' }), chunk({ content: null }))
+			);
+		todoMcp.listTools.mockResolvedValue([
+			{
+				name: 'get_todos',
+				description: 'List todos',
+				inputSchema: { type: 'object', properties: {} }
+			},
+			{
+				name: 'delete_todo',
+				description: 'Delete todo',
+				inputSchema: {
+					type: 'object',
+					properties: { todoId: { type: 'number' } },
+					required: ['todoId']
+				}
+			}
+		]);
+		todoMcp.callTool.mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] });
+		const received: ChatCompletionMessageParam[] = [];
+
+		await chat.run([], 'model', (message) => received.push(message));
+
+		const toolCalls = received
+			.filter((message): message is ChatCompletionToolMessageParam => message.role === 'tool')
+			.map((message) => message.tool_call_id);
+		expect(toolCalls).toEqual(['call-1', 'call-2']);
+	});
+
+	it('runs UI tools through the UI MCP server', async () => {
+		openai.chat.completions.create
+			.mockResolvedValueOnce(
+				streamOf(
+					chunk({
+						role: 'assistant',
+						tool_calls: [
+							{
+								index: 0,
+								id: 'call-2',
+								type: 'function',
+								function: { name: 'ui_ask_text', arguments: '   ' }
+							}
+						]
+					}),
+					chunk({ content: null })
+				)
+			)
+			.mockResolvedValueOnce(
+				streamOf(chunk({ role: 'assistant', content: 'Okay' }), chunk({ content: null }))
+			);
 		uiMcp.listTools.mockResolvedValue([
 			{ name: 'ui_ask_text', description: 'Ask', inputSchema: { type: 'object' } }
 		]);
@@ -198,27 +336,28 @@ describe('AiChat', () => {
 		expect(todoMcp.callTool).not.toHaveBeenCalled();
 	});
 
-	it('marks failed tools and unsupported tool call types', async () => {
+	it('marks failed tools and custom tool call types', async () => {
 		openai.chat.completions.create
-			.mockResolvedValueOnce({
-				choices: [
-					{
-						message: {
-							role: 'assistant',
-							content: null,
-							tool_calls: [
-								{
-									id: 'failed',
-									type: 'function',
-									function: { name: 'delete_todo', arguments: '{}' }
-								},
-								{ id: 'custom', type: 'custom', custom: { name: 'other' } }
-							]
-						}
-					}
-				]
-			})
-			.mockResolvedValueOnce({ choices: [{ message: { role: 'assistant', content: 'Done' } }] });
+			.mockResolvedValueOnce(
+				streamOf(
+					chunk({
+						role: 'assistant',
+						tool_calls: [
+							{
+								index: 0,
+								id: 'failed',
+								type: 'function',
+								function: { name: 'delete_todo', arguments: '{}' }
+							},
+							{ index: 1, id: 'custom', type: 'custom', custom: { name: 'other' } }
+						]
+					}),
+					chunk({ content: null })
+				)
+			)
+			.mockResolvedValueOnce(
+				streamOf(chunk({ role: 'assistant', content: 'Done' }), chunk({ content: null }))
+			);
 		todoMcp.listTools.mockResolvedValue([
 			{ name: 'delete_todo', description: 'Delete', inputSchema: { type: 'object' } }
 		]);
@@ -242,26 +381,64 @@ describe('AiChat', () => {
 		});
 	});
 
+	it('drops incomplete tool call deltas without id or name', async () => {
+		openai.chat.completions.create
+			.mockResolvedValueOnce(
+				streamOf(
+					chunk({
+						role: 'assistant',
+						tool_calls: [
+							{
+								index: 0,
+								id: 'complete',
+								type: 'function',
+								function: { name: 'get_todos', arguments: '{}' }
+							},
+							{ index: 1, function: { name: 'get_todos', arguments: '{}' } },
+							{ index: 2, id: 'no-name', type: 'function', function: { arguments: '{}' } }
+						]
+					}),
+					chunk({ content: null })
+				)
+			)
+			.mockResolvedValueOnce(
+				streamOf(chunk({ role: 'assistant', content: 'Done' }), chunk({ content: null }))
+			);
+		todoMcp.listTools.mockResolvedValue([
+			{ name: 'get_todos', description: 'List todos', inputSchema: { type: 'object' } }
+		]);
+		todoMcp.callTool.mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] });
+		const received: ChatCompletionMessageParam[] = [];
+
+		await chat.run([], 'model', (message) => received.push(message));
+
+		const toolCalls = received
+			.filter((message): message is ChatCompletionToolMessageParam => message.role === 'tool')
+			.map((message) => message.tool_call_id);
+		expect(toolCalls).toEqual(['complete']);
+	});
+
 	it('turns invalid tool arguments into a failed tool message', async () => {
 		openai.chat.completions.create
-			.mockResolvedValueOnce({
-				choices: [
-					{
-						message: {
-							role: 'assistant',
-							content: null,
-							tool_calls: [
-								{
-									id: 'invalid',
-									type: 'function',
-									function: { name: 'get_todos', arguments: '[]' }
-								}
-							]
-						}
-					}
-				]
-			})
-			.mockResolvedValueOnce({ choices: [{ message: { role: 'assistant', content: 'Done' } }] });
+			.mockResolvedValueOnce(
+				streamOf(
+					chunk({
+						role: 'assistant',
+						tool_calls: [
+							{
+								index: 0,
+								id: 'invalid',
+								type: 'function',
+								function: { name: 'get_todos', arguments: '[]' }
+							}
+						]
+					}),
+					chunk({ content: null })
+				)
+			)
+			.mockResolvedValueOnce(
+				streamOf(chunk({ role: 'assistant', content: 'Done' }), chunk({ content: null }))
+			);
 		todoMcp.listTools.mockResolvedValue([
 			{ name: 'get_todos', description: 'List', inputSchema: { type: 'object' } }
 		]);
@@ -274,14 +451,25 @@ describe('AiChat', () => {
 	});
 
 	it('stops after the maximum number of tool iterations', async () => {
-		const toolCall = {
-			id: 'loop',
-			type: 'function',
-			function: { name: 'get_todos', arguments: '{}' }
-		};
-		openai.chat.completions.create.mockResolvedValue({
-			choices: [{ message: { role: 'assistant', content: null, tool_calls: [toolCall] } }]
-		});
+		// Each completions call must open a fresh stream that asks for the same tool again.
+		openai.chat.completions.create.mockImplementation(() =>
+			Promise.resolve(
+				streamOf(
+					chunk({
+						role: 'assistant',
+						tool_calls: [
+							{
+								index: 0,
+								id: 'loop',
+								type: 'function',
+								function: { name: 'get_todos', arguments: '{}' }
+							}
+						]
+					}),
+					chunk({ content: null })
+				)
+			)
+		);
 		todoMcp.listTools.mockResolvedValue([
 			{ name: 'get_todos', description: 'List', inputSchema: { type: 'object' } }
 		]);
@@ -291,7 +479,7 @@ describe('AiChat', () => {
 	});
 
 	it('rejects a second request while one is running', async () => {
-		const pending = deferred<unknown>();
+		const pending = deferred<Stream<ChatCompletionChunk>>();
 		openai.chat.completions.create.mockReturnValue(pending.promise);
 		const first = chat.run([], 'model', () => undefined);
 		await vi.waitFor(() => {
@@ -300,25 +488,91 @@ describe('AiChat', () => {
 
 		await expect(chat.run([], 'model', () => undefined)).rejects.toThrow('already running');
 
-		pending.resolve({ choices: [{ message: { role: 'assistant', content: 'Done' } }] });
+		pending.resolve(streamOf(chunk({ content: 'Done' })));
 		await first;
 	});
 
-	it('stops a request that is aborted before the model answers', async () => {
-		const pending = deferred<unknown>();
+	it('stops a request that is aborted before the stream opens', async () => {
+		const pending = deferred<Stream<ChatCompletionChunk>>();
 		openai.chat.completions.create.mockReturnValue(pending.promise);
 		const received: ChatCompletionMessageParam[] = [];
-		const running = chat.run([], 'model', (message) => received.push(message));
+		const partials: string[] = [];
+		const running = chat.run(
+			[],
+			'model',
+			(message) => received.push(message),
+			(text) => partials.push(text)
+		);
 		await vi.waitFor(() => {
 			expect(openai.chat.completions.create).toHaveBeenCalled();
 		});
 
 		await chat.dispose();
-		pending.resolve({ choices: [{ message: { role: 'assistant', content: 'Too late' } }] });
+		pending.resolve(streamOf(chunk({ content: 'Too late' })));
+		await running;
+
+		expect(received).toEqual([]);
+		expect(partials).toEqual([]);
+	});
+
+	it('drops a partially streamed answer when aborted mid-stream', async () => {
+		openai.chat.completions.create.mockImplementation(() =>
+			Promise.resolve(
+				(async function* (): AsyncGenerator<ChatCompletionChunk> {
+					yield chunk({ content: 'part' });
+					while (true) {
+						await new Promise<void>((resolve) => {
+							setTimeout(resolve, 1);
+						});
+						yield chunk({ content: 'more' });
+					}
+				})() as unknown as Stream<ChatCompletionChunk>
+			)
+		);
+		const received: ChatCompletionMessageParam[] = [];
+		const partials: string[] = [];
+		const running = chat.run(
+			[],
+			'model',
+			(message) => received.push(message),
+			(text) => partials.push(text)
+		);
+		await vi.waitFor(() => {
+			expect(partials).toContain('part');
+		});
+
+		await chat.dispose();
 		await running;
 
 		expect(received).toEqual([]);
 	});
+
+	function streamOf(...chunks: ChatCompletionChunk[]): Stream<ChatCompletionChunk> {
+		const queue = [...chunks];
+		const iterable: AsyncIterable<ChatCompletionChunk> = {
+			[Symbol.asyncIterator]: () => {
+				return {
+					next: (): Promise<IteratorResult<ChatCompletionChunk>> => {
+						const value = queue.shift();
+						return value === undefined
+							? Promise.resolve({ done: true, value: undefined })
+							: Promise.resolve({ done: false, value });
+					}
+				};
+			}
+		};
+		return iterable as unknown as Stream<ChatCompletionChunk>;
+	}
+
+	function chunk(delta: ChatCompletionChunk.Choice['delta']): ChatCompletionChunk {
+		return {
+			id: 'chunk-1',
+			created: 1700000000,
+			model: 'test-model',
+			object: 'chat.completion.chunk',
+			choices: [{ index: 0, delta, finish_reason: null }]
+		};
+	}
 
 	function deferred<T>(): {
 		promise: Promise<T>;
