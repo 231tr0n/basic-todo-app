@@ -14,6 +14,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -64,6 +65,19 @@ public class GlobalControllerAdvice {
   @ExceptionHandler(JWTVerificationException.class)
   public ResponseEntity<String> handleJwtVerificationException(JWTVerificationException exception) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+  }
+
+  /**
+   * Long-lived streaming requests (the MCP streamable HTTP connection and streamed AI responses)
+   * end through this exception when their async timeout expires. It is a normal part of the
+   * protocol lifecycle: the client simply reconnects, so it must not surface as an unhandled 500
+   * and be logged like a bug.
+   */
+  @ExceptionHandler(AsyncRequestTimeoutException.class)
+  public ResponseEntity<String> handleAsyncRequestTimeoutException(
+      AsyncRequestTimeoutException exception) {
+    log.debug("Async request timed out", exception);
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Request timed out");
   }
 
   @ExceptionHandler(Exception.class)

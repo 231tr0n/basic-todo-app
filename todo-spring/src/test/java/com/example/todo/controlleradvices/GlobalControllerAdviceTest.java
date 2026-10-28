@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 
 class GlobalControllerAdviceTest {
   private final GlobalControllerAdvice advice = new GlobalControllerAdvice();
@@ -29,6 +30,9 @@ class GlobalControllerAdviceTest {
     assertStatus(
         advice.handleJwtVerificationException(new JWTVerificationException("invalid")),
         HttpStatus.UNAUTHORIZED);
+    assertStatus(
+        advice.handleAsyncRequestTimeoutException(new AsyncRequestTimeoutException()),
+        HttpStatus.SERVICE_UNAVAILABLE);
     assertStatus(
         advice.handleException(new RuntimeException("boom")), HttpStatus.INTERNAL_SERVER_ERROR);
   }
