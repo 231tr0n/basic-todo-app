@@ -41,7 +41,7 @@
 				<span class="tool-count">{{ group.rows.length }}</span>
 			</h3>
 			<div class="table-scroll">
-				<table mat-table class="tool-table" [dataSource]="group.rows">
+				<table mat-table class="tool-table" fixedLayout [dataSource]="group.rows">
 					<ng-container matColumnDef="server">
 						<th *matHeaderCellDef mat-header-cell>Server</th>
 						<td *matCellDef="let row" mat-cell>{{ row.server }}</td>
