@@ -91,6 +91,54 @@ describe('ToolCatalog', () => {
 		expect(text).toContain('sort');
 	});
 
+	it('describes unions, arrays, bounds and numeric enums from complex schemas', () => {
+		const complex: McpToolGroup[] = [
+			{
+				server: 'UI MCP server',
+				tools: [
+					{
+						name: 'ui_complex',
+						description: 'A complex schema',
+						inputSchema: {
+							type: 'object',
+							properties: {
+								mode: {
+									anyOf: [{ type: 'string' }, { type: 'number' }],
+									description: 'Two accepted kinds'
+								},
+								scale: {
+									oneOf: [{ type: 'string' }, { type: 'boolean' }]
+								},
+								tags: { type: 'array', items: { type: 'string' } },
+								nullable: { type: ['string', 'null'] },
+								name: { type: 'string', minLength: 2, maxLength: 8 },
+								priority: { enum: [1, 2, 3], description: 'Urgency level' },
+								anything: { description: 'Anything goes' }
+							},
+							required: ['mode', 'name']
+						}
+					}
+				]
+			}
+		];
+		fixture.componentRef.setInput('groups', complex);
+		fixture.detectChanges();
+
+		const table = firstParameterTable();
+		const text = table.textContent;
+
+		expect(text).toContain('string | number');
+		expect(text).toContain('Two accepted kinds');
+		expect(text).toContain('string | boolean');
+		expect(text).toContain('array of string');
+		expect(text).toContain('string | null');
+		expect(text).toContain('min 2, max 8');
+		expect(text).toContain('Urgency level, one of 1 | 2 | 3');
+		expect(text).toContain('unknown');
+		// Required parameters sort ahead of optional ones, each sorted by name.
+		expect(text.indexOf('anything')).toBeGreaterThan(text.indexOf('mode'));
+	});
+
 	it('lists required parameters before optional ones, both by name', () => {
 		const table = firstParameterTable();
 		const text = table.textContent;
