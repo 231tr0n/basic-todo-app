@@ -56,6 +56,13 @@
 	overflow-wrap: anywhere;
 }
 
+/* Tool names stand out as filled chips so every row has a visible anchor. */
+.mat-column-tool code {
+	background-color: var(--mat-sys-surface-container-high);
+	border-radius: 999px;
+	padding: 2px 8px;
+}
+
 .mat-column-server {
 	width: 18%;
 }
@@ -70,6 +77,16 @@
 
 .mat-column-parameters {
 	width: 36%;
+}
+
+/* Alternating surface tints and a hover highlight keep the rows distinct
+   against the dark console of the chat card. */
+.tool-table .mat-mdc-row:nth-child(even) {
+	background-color: var(--mat-sys-surface-container-low);
+}
+
+.tool-table .mat-mdc-row:hover {
+	background-color: var(--mat-sys-surface-container);
 }
 
 .parameter-table {
