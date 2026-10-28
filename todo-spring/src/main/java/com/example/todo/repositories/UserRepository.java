@@ -19,7 +19,4 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
   @Query("SELECT DISTINCT u FROM UserEntity u LEFT JOIN FETCH u.authorities")
   List<UserEntity> findAllAndFetchAuthorities();
-
-  @Query("SELECT COUNT(a) FROM AuthorityEntity a WHERE a.authority = :authority")
-  long countByAuthorities_Authority(String authority);
 }

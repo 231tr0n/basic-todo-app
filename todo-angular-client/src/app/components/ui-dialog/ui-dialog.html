@@ -19,10 +19,10 @@
 	<mat-card-actions align="end">
 		@if (displayData()) {
 			<button matButton="filled" type="button" (click)="close()">Close</button>
-		} @else {
+		} @else if (state(); as input) {
 			<button matButton type="button" (click)="close()">Cancel</button>
-			<button matButton="filled" type="button" [disabled]="!state()?.valid" (click)="confirm()">
-				{{ state()?.data?.kind === 'confirm' ? 'Confirm' : 'OK' }}
+			<button matButton="filled" type="button" [disabled]="!input.valid" (click)="confirm()">
+				{{ input.data.kind === 'confirm' ? 'Confirm' : 'OK' }}
 			</button>
 		}
 	</mat-card-actions>

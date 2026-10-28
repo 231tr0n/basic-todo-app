@@ -4,7 +4,7 @@ import com.example.todo.components.JwtAuthenticationFilterComponent;
 import com.example.todo.constants.Constants;
 import com.example.todo.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,7 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SecurityConfiguration {
   private final JwtAuthenticationFilterComponent jwtAuthenticationFilterComponent;
   private final UserRepository userRepository;

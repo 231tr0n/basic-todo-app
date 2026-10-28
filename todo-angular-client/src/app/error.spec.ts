@@ -8,7 +8,7 @@ describe('GlobalErrorHandler', () => {
 
 		new GlobalErrorHandler().handleError(error);
 
-		expect(consoleError).toHaveBeenCalledWith(GlobalErrorHandler.name, { error });
+		expect(consoleError).toHaveBeenCalledWith('GlobalErrorHandler', { error });
 		consoleError.mockRestore();
 	});
 });

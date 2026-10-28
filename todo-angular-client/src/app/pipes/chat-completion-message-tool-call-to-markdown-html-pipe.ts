@@ -1,28 +1,14 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { Marked } from 'marked';
-import { markedHighlight } from 'marked-highlight';
-import hljs from 'highlight.js';
-import DOMPurify from 'dompurify';
 import type {
 	ChatCompletionAssistantMessageParam,
 	ChatCompletionMessageParam
 } from 'openai/resources/chat/completions';
+import { renderMarkdown } from '../library/markdown';
 
 @Pipe({
 	name: 'chatCompletionMessageToolCallToMarkdownHtmlPipe'
 })
-export class ChatCompletionMessageToolCallToMarkdownHtmlPipePipe implements PipeTransform {
-	private readonly marked = new Marked(
-		markedHighlight({
-			emptyLangClass: 'hljs',
-			langPrefix: 'hljs language-',
-			highlight(code, lang) {
-				const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-				return hljs.highlight(code, { language }).value;
-			}
-		})
-	);
-
+export class ChatCompletionMessageToolCallToMarkdownHtmlPipe implements PipeTransform {
 	transform(value: ChatCompletionMessageParam): string {
 		const assistantMessage = value as ChatCompletionAssistantMessageParam;
 		if (!assistantMessage.tool_calls) return '';
@@ -39,6 +25,6 @@ export class ChatCompletionMessageToolCallToMarkdownHtmlPipePipe implements Pipe
 			}
 			content += `\n\`\`\`\n`;
 		}
-		return DOMPurify.sanitize(this.marked.parse(content) as string);
+		return renderMarkdown(content);
 	}
 }

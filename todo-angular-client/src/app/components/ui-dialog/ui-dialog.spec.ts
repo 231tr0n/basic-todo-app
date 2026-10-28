@@ -98,6 +98,77 @@ describe('UiDialog', () => {
 		expect(checkboxes[1].classList.contains('mat-mdc-checkbox-checked')).toBe(false);
 	});
 
+	it('supports choice inputs', () => {
+		const values: UiInputResult[] = [];
+		fixture.componentInstance.resolved.subscribe((value) => values.push(value));
+
+		render({
+			kind: 'select',
+			prompt: 'Choose one',
+			options: ['A', 'B'],
+			initialValue: 'B'
+		});
+
+		expect(button('OK').disabled).toBe(false);
+		button('OK').click();
+		expect(values).toEqual(['B']);
+
+		render({
+			kind: 'combobox',
+			prompt: 'Pick or type',
+			options: ['Option 1'],
+			initialValue: 'Custom'
+		});
+
+		expect(button('OK').disabled).toBe(false);
+		button('OK').click();
+		expect(values).toEqual(['B', 'Custom']);
+	});
+
+	it('supports multiselect choice inputs', () => {
+		const values: UiInputResult[] = [];
+		fixture.componentInstance.resolved.subscribe((value) => values.push(value));
+
+		render({
+			kind: 'multiselect',
+			prompt: 'Pick multiple',
+			options: ['A', 'B', 'C'],
+			initialValues: ['A', 'C']
+		});
+
+		expect(button('OK').disabled).toBe(false);
+		button('OK').click();
+
+		expect(values).toEqual([['A', 'C']]);
+	});
+
+	it('supports value inputs for numbers, dates and times', () => {
+		const values: UiInputResult[] = [];
+		fixture.componentInstance.resolved.subscribe((value) => values.push(value));
+
+		render({
+			kind: 'number',
+			prompt: 'Count',
+			initialValue: '5',
+			min: 1,
+			max: 10
+		});
+
+		expect(button('OK').disabled).toBe(false);
+		button('OK').click();
+
+		render({
+			kind: 'time',
+			prompt: 'Start time',
+			initialValue: '14:30'
+		});
+
+		expect(button('OK').disabled).toBe(false);
+		button('OK').click();
+
+		expect(values).toEqual(['5', '14:30']);
+	});
+
 	function query(selector: string): Element {
 		const node = element.querySelector(selector);
 		if (!node) throw new Error(`Element ${selector} not found`);

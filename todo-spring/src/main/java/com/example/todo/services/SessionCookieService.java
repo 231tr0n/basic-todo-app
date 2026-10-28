@@ -17,7 +17,7 @@ import org.springframework.web.util.WebUtils;
 public class SessionCookieService {
   private final TodoConfigurationProperties configurationProperties;
 
-  private ResponseCookie createSessionCookie(@NonNull String value, int expiry) {
+  private ResponseCookie createSessionCookie(String value, int expiry) {
     return ResponseCookie.from(configurationProperties.getCookie().getName(), value)
         .httpOnly(configurationProperties.getCookie().isHttpOnly())
         .path(configurationProperties.getCookie().getPath())

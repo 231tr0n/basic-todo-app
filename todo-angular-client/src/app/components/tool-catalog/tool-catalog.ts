@@ -11,6 +11,15 @@ import type {
 	ToolCatalogRow
 } from '../../types/mcp-tools';
 
+type ToolCatalogFilters = Record<ToolCatalogColumn, string>;
+
+const EMPTY_FILTERS: ToolCatalogFilters = {
+	server: '',
+	tool: '',
+	description: '',
+	required: ''
+};
+
 @Component({
 	selector: 'app-tool-catalog',
 	imports: [FormsModule, MatFormField, MatInput, MatLabel, MatTableModule],
@@ -27,15 +36,9 @@ export class ToolCatalog {
 		'description',
 		'required'
 	];
-	protected readonly filters: Record<ToolCatalogColumn, string> = {
-		server: '',
-		tool: '',
-		description: '',
-		required: ''
-	};
+	protected readonly filters = signal<ToolCatalogFilters>(EMPTY_FILTERS);
 	protected readonly filteredGroups = computed<ToolCatalogGroup[]>(() => {
-		this.filterRevision();
-		const filters = this.filters;
+		const filters = this.filters();
 		return this.groups()
 			.map((group) => ({
 				server: group.server,
@@ -50,10 +53,8 @@ export class ToolCatalog {
 			.filter((group) => group.rows.length > 0);
 	});
 
-	private readonly filterRevision = signal(0);
-
-	protected applyFilters(): void {
-		this.filterRevision.update((revision) => revision + 1);
+	protected setFilter(column: ToolCatalogColumn, value: string): void {
+		this.filters.update((filters) => ({ ...filters, [column]: value }));
 	}
 
 	private toRow(server: string, tool: Tool): ToolCatalogRow {

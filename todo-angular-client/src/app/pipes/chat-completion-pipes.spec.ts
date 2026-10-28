@@ -1,10 +1,10 @@
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { ChatCompletionMessageParamMarkdownToHtmlPipe } from './chat-completion-message-param-markdown-to-html-pipe';
-import { ChatCompletionMessageToolCallToMarkdownHtmlPipePipe } from './chat-completion-message-tool-call-to-markdown-html-pipe-pipe';
+import { ChatCompletionMessageToolCallToMarkdownHtmlPipe } from './chat-completion-message-tool-call-to-markdown-html-pipe';
 
 describe('chat completion pipes', () => {
 	const markdown = new ChatCompletionMessageParamMarkdownToHtmlPipe();
-	const toolCalls = new ChatCompletionMessageToolCallToMarkdownHtmlPipePipe();
+	const toolCalls = new ChatCompletionMessageToolCallToMarkdownHtmlPipe();
 
 	it('renders sanitised markdown for string content', () => {
 		const html = markdown.transform({ role: 'user', content: '**bold** <script>bad</script>' });

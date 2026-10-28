@@ -12,7 +12,7 @@ import com.example.todo.dtos.UserResponseDto;
 import com.example.todo.services.GlobalService;
 import jakarta.validation.Valid;
 import java.util.List;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api")
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class GlobalController {
   private final GlobalService globalService;
 

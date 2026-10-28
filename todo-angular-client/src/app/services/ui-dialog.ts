@@ -15,13 +15,13 @@ export class UiDialogService {
 	readonly active = computed<UiDialogRequest | null>(() => this.requests()[0] ?? null);
 	readonly hasActive = computed(() => this.requests().length > 0);
 
-	async ask(data: UiInputDialogData): Promise<UiInputResult> {
+	ask(data: UiInputDialogData): Promise<UiInputResult> {
 		return new Promise<UiInputResult>((resolve) => {
 			this.enqueue(data, resolve);
 		});
 	}
 
-	async show(data: UiDialogData): Promise<void> {
+	show(data: UiDialogData): Promise<void> {
 		return new Promise<void>((resolve) => {
 			this.enqueue(data, () => {
 				resolve();

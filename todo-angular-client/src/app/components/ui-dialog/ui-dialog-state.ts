@@ -32,9 +32,17 @@ export class UiDialogState {
 			case 'date':
 				return this.dateValue !== null;
 			case 'date-range':
-				return this.dateValue !== null && this.endDateValue !== null;
+				return (
+					this.dateValue !== null &&
+					this.endDateValue !== null &&
+					this.dateValue.getTime() <= this.endDateValue.getTime()
+				);
 			case 'time-range':
-				return this.textValue.trim().length > 0 && this.endTextValue.trim().length > 0;
+				return (
+					this.textValue.trim().length > 0 &&
+					this.endTextValue.trim().length > 0 &&
+					this.textValue.trim() <= this.endTextValue.trim()
+				);
 			case 'number':
 				return (
 					this.numberValue !== null &&
@@ -44,6 +52,8 @@ export class UiDialogState {
 				);
 			case 'multiselect':
 				return true;
+			case 'select':
+				return (this.data.options ?? []).includes(this.textValue);
 			default:
 				return this.textValue.trim().length > 0;
 		}

@@ -28,7 +28,7 @@ import { GlobalApi } from '../../services/global-api';
 import { UiDialogService } from '../../services/ui-dialog';
 import type { McpToolGroup } from '../../types/mcp-tools';
 import { ChatCompletionMessageParamMarkdownToHtmlPipe } from '../../pipes/chat-completion-message-param-markdown-to-html-pipe';
-import { ChatCompletionMessageToolCallToMarkdownHtmlPipePipe } from '../../pipes/chat-completion-message-tool-call-to-markdown-html-pipe-pipe';
+import { ChatCompletionMessageToolCallToMarkdownHtmlPipe } from '../../pipes/chat-completion-message-tool-call-to-markdown-html-pipe';
 import { UiInputResult } from '../../types/ui-dialog';
 import { UiDialog } from '../ui-dialog/ui-dialog';
 import { ToolCatalog } from '../tool-catalog/tool-catalog';
@@ -55,7 +55,7 @@ import { ToolCatalog } from '../tool-catalog/tool-catalog';
 		UiDialog,
 		ToolCatalog,
 		ChatCompletionMessageParamMarkdownToHtmlPipe,
-		ChatCompletionMessageToolCallToMarkdownHtmlPipePipe
+		ChatCompletionMessageToolCallToMarkdownHtmlPipe
 	],
 	templateUrl: './chat.html',
 	styleUrl: './chat.css',
@@ -90,6 +90,10 @@ export class Chat implements OnInit, OnDestroy {
 				this.onScroll();
 			}
 		});
+	}
+
+	protected get sendDisabled(): boolean {
+		return this.chatInputDisabled() || this.message.trim().length === 0;
 	}
 
 	protected get visibleMessages(): ChatCompletionMessageParam[] {

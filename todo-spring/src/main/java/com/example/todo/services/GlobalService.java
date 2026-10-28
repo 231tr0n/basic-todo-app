@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -43,7 +43,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Service
 @Validated
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class GlobalService {
   private static final Set<String> ALLOWED_AUTHORITIES = Set.of(Constants.ADMIN_AUTHORITY);
 
@@ -77,16 +77,10 @@ public class GlobalService {
     }
   }
 
-  private void ensureCanAssignAdmin(Set<String> authorities) {
-    if (!authorities.contains(Constants.ADMIN_AUTHORITY)) return;
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication != null && authentication.getPrincipal() instanceof UserEntity user) {
-      isAdminOrThrow(user);
-      return;
-    }
-    if (userRepository.countByAuthorities_Authority(Constants.ADMIN_AUTHORITY) > 0) {
+  private void ensureSelfRegistrationCanAssignAdmin(Set<String> authorities) {
+    if (authorities.contains(Constants.ADMIN_AUTHORITY) && userRepository.count() > 0) {
       throw new AuthorizationDeniedException(
-          "Only an administrator can assign the ADMIN authority");
+          "Only the first account can assign itself the ADMIN authority");
     }
   }
 
@@ -100,7 +94,7 @@ public class GlobalService {
           CreateUserDto createUserDto) {
     ensureUsernameAvailable(createUserDto.getUsername());
     ensureKnownAuthorities(createUserDto.getAuthorities());
-    ensureCanAssignAdmin(createUserDto.getAuthorities());
+    ensureSelfRegistrationCanAssignAdmin(createUserDto.getAuthorities());
     UserEntity user =
         UserEntity.builder()
             .username(createUserDto.getUsername())
@@ -200,7 +194,7 @@ public class GlobalService {
   public List<UserResponseDto> getUsers() {
     UserEntity currentUser = getCurrentUserOrThrow();
     if (!isAdmin(currentUser)) {
-      return List.of(UserResponseDto.from(resolveUser(0)));
+      return List.of(UserResponseDto.from(currentUser));
     }
     return userRepository.findAllAndFetchAuthorities().stream().map(UserResponseDto::from).toList();
   }
@@ -218,17 +212,20 @@ public class GlobalService {
       throw new IllegalArgumentException(
           "One of username or authorities must be provided for updateUser operation");
     }
+    UserEntity currentUser = getCurrentUserOrThrow();
+    if (authorities != null) {
+      isAdminOrThrow(currentUser);
+      ensureKnownAuthorities(authorities);
+    }
     UserEntity user = resolveUser(userId);
     if (username != null && !username.equals(user.getUsername())) {
       ensureUsernameAvailable(username);
       user.setUsername(username);
     }
     if (authorities != null) {
-      ensureKnownAuthorities(authorities);
-      isAdminOrThrow(getCurrentUserOrThrow());
       replaceAuthorities(user, authorities);
     }
-    if (user.getId() == getCurrentUserOrThrow().getId() && username != null) {
+    if (user.getId() == currentUser.getId() && username != null) {
       refreshSessionCookie(username);
     }
   }
@@ -264,7 +261,7 @@ public class GlobalService {
       authenticationManager.authenticate(
           new UsernamePasswordAuthenticationToken(
               user.getUsername(), patchUserDto.getOldPassword()));
-    } catch (AuthenticationException exception) {
+    } catch (AuthenticationException _) {
       throw new IllegalArgumentException("Old password is incorrect");
     }
     user.setPassword(passwordEncoder.encode(patchUserDto.getNewPassword()));
@@ -279,8 +276,9 @@ public class GlobalService {
           long userId) {
     UserEntity user = resolveUser(userId);
     long currentUserId = getCurrentUserOrThrow().getId();
+    long deletedUserId = user.getId();
     userRepository.delete(user);
-    if (user.getId() == currentUserId) {
+    if (deletedUserId == currentUserId) {
       HttpServletResponse response = currentResponse();
       if (response != null) {
         sessionCookieService.deleteSessionCookie(response);

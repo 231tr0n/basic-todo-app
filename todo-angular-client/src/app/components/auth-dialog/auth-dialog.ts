@@ -78,11 +78,12 @@ export class AuthDialog {
 	}
 
 	protected async signUp(): Promise<void> {
-		if (!this.valid || this.busy) return;
+		if (this.busy) return;
 		if (this.password !== this.confirmPassword) {
 			this.error = 'The passwords do not match.';
 			return;
 		}
+		if (!this.valid) return;
 		this.busy = true;
 		this.error = null;
 		try {

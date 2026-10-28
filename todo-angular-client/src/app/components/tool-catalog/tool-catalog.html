@@ -5,32 +5,32 @@
 			<input
 				matInput
 				class="filter-server"
-				[(ngModel)]="filters.server"
-				(ngModelChange)="applyFilters()" />
+				[ngModel]="filters().server"
+				(ngModelChange)="setFilter('server', $event)" />
 		</mat-form-field>
 		<mat-form-field subscriptSizing="dynamic">
 			<mat-label>Tool</mat-label>
 			<input
 				matInput
 				class="filter-tool"
-				[(ngModel)]="filters.tool"
-				(ngModelChange)="applyFilters()" />
+				[ngModel]="filters().tool"
+				(ngModelChange)="setFilter('tool', $event)" />
 		</mat-form-field>
 		<mat-form-field subscriptSizing="dynamic">
 			<mat-label>Description</mat-label>
 			<input
 				matInput
 				class="filter-description"
-				[(ngModel)]="filters.description"
-				(ngModelChange)="applyFilters()" />
+				[ngModel]="filters().description"
+				(ngModelChange)="setFilter('description', $event)" />
 		</mat-form-field>
 		<mat-form-field subscriptSizing="dynamic">
 			<mat-label>Required</mat-label>
 			<input
 				matInput
 				class="filter-required"
-				[(ngModel)]="filters.required"
-				(ngModelChange)="applyFilters()" />
+				[ngModel]="filters().required"
+				(ngModelChange)="setFilter('required', $event)" />
 		</mat-form-field>
 	</div>
 

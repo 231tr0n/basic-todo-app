@@ -150,6 +150,19 @@ class GlobalControllerIntegrationTest {
         .andExpect(jsonPath("$.authorities", containsInAnyOrder(ADMIN)));
 
     mockMvc
+        .perform(
+            put("/api/users/{id}", aliceId)
+                .cookie(token(adminCookie))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("authorities", List.of()))))
+        .andExpect(status().isNoContent());
+
+    mockMvc
+        .perform(get("/api/users/{id}", aliceId).cookie(token(adminCookie)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.authorities", empty()));
+
+    mockMvc
         .perform(delete("/api/users/{id}", bobId).cookie(token(adminCookie)))
         .andExpect(status().isNoContent());
 
@@ -361,6 +374,135 @@ class GlobalControllerIntegrationTest {
         .andExpect(status().isNotFound());
 
     mockMvc.perform(get("/api/unknown")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void rejectsInvalidUserUpdates() throws Exception {
+    signUp("admin", List.of(ADMIN), 201);
+    signUp("alice", List.of(), 201);
+    signUp("bob", List.of(), 201);
+    String adminCookie = signIn("admin", PASSWORD);
+    long aliceId = userId("alice");
+
+    mockMvc
+        .perform(
+            put("/api/users/0")
+                .cookie(token(adminCookie))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isBadRequest());
+
+    mockMvc
+        .perform(
+            put("/api/users/{id}", aliceId)
+                .cookie(token(adminCookie))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("authorities", List.of("SUPERUSER")))))
+        .andExpect(status().isBadRequest());
+
+    mockMvc
+        .perform(
+            put("/api/users/{id}", aliceId)
+                .cookie(token(adminCookie))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("username", "bob"))))
+        .andExpect(status().isConflict());
+
+    mockMvc
+        .perform(
+            put("/api/users/{id}", aliceId)
+                .cookie(token(adminCookie))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("username", "alice"))))
+        .andExpect(status().isNoContent());
+
+    mockMvc
+        .perform(delete("/api/users/{id}", aliceId).cookie(token(signIn("bob", PASSWORD))))
+        .andExpect(status().isForbidden());
+
+    mockMvc
+        .perform(get("/api/users/{id}", 999999).cookie(token(adminCookie)))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void deletingTheCurrentUserClearsTheSessionCookie() throws Exception {
+    signUp("alice", List.of(), 201);
+    String cookie = signIn("alice", PASSWORD);
+
+    mockMvc
+        .perform(delete("/api/users/0").cookie(token(cookie)))
+        .andExpect(status().isNoContent())
+        .andExpect(cookie().maxAge("token", 0));
+
+    mockMvc.perform(get("/api/users/0").cookie(token(cookie))).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void adminsCanChangeAnotherUsersPassword() throws Exception {
+    signUp("admin", List.of(ADMIN), 201);
+    signUp("alice", List.of(), 201);
+    String adminCookie = signIn("admin", PASSWORD);
+
+    mockMvc
+        .perform(
+            patch("/api/users/{id}", userId("alice"))
+                .cookie(token(adminCookie))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("oldPassword", PASSWORD, "newPassword", "Next123!"))))
+        .andExpect(status().isNoContent());
+
+    signIn("alice", "Next123!");
+  }
+
+  @Test
+  void updatesOnlyTheProvidedTodoFieldsAndDeletesAllTodosAsAdmin() throws Exception {
+    signUp("admin", List.of(ADMIN), 201);
+    signUp("bob", List.of(), 201);
+    String adminCookie = signIn("admin", PASSWORD);
+    long bobId = userId("bob");
+
+    MvcResult created =
+        mockMvc
+            .perform(
+                post("/api/users/{id}/todos", bobId)
+                    .cookie(token(adminCookie))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(Map.of("title", "Bob todo", "description", "Original"))))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long todoId =
+        objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
+
+    mockMvc
+        .perform(
+            put("/api/users/{id}/todos/{todoId}", bobId, todoId)
+                .cookie(token(adminCookie))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("description", "Updated description"))))
+        .andExpect(status().isNoContent());
+
+    mockMvc
+        .perform(get("/api/users/{id}/todos/{todoId}", bobId, todoId).cookie(token(adminCookie)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value("Bob todo"))
+        .andExpect(jsonPath("$.description").value("Updated description"));
+
+    mockMvc
+        .perform(delete("/api/users/{id}/todos", bobId).cookie(token(adminCookie)))
+        .andExpect(status().isNoContent());
+
+    mockMvc
+        .perform(get("/api/users/{id}/todos", bobId).cookie(token(adminCookie)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", empty()));
+  }
+
+  @Test
+  void rejectsUnauthenticatedMutations() throws Exception {
+    mockMvc.perform(post("/api/signout")).andExpect(status().isUnauthorized());
+    mockMvc.perform(delete("/api/users/0")).andExpect(status().isUnauthorized());
+    mockMvc.perform(get("/api/users")).andExpect(status().isUnauthorized());
   }
 
   private void signUp(String username, List<String> authorities, int expectedStatus)
