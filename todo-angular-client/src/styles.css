@@ -6,3 +6,14 @@ body {
 	margin: 0;
 	font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
+
+/* Material Design 3 dialogs are raised surfaces: their container uses
+   `surface-container-high` instead of the page's `surface` background and
+   carries a level 3 elevation shadow, so open dialogs stand out from the
+   content instead of blending with it. The Material defaults map the dialog
+   container to plain `surface` with no shadow, which is what blurred the
+   dialogs into the background here. */
+.cdk-overlay-container {
+	--mat-dialog-container-color: var(--mat-sys-surface-container-high);
+	--mat-dialog-container-elevation-shadow: var(--mat-sys-level3);
+}

@@ -41,6 +41,53 @@
 	overflow-wrap: anywhere;
 }
 
+.parameter-table {
+	border-collapse: collapse;
+	text-align: left;
+	width: 100%;
+}
+
+.parameter-table th {
+	color: var(--mat-sys-on-surface-variant);
+	font: var(--mat-sys-label-small);
+	font-weight: bold;
+	padding: 4px 8px 4px 0;
+	white-space: nowrap;
+}
+
+.parameter-table td {
+	border-top: 1px solid var(--mat-sys-outline-variant);
+	padding: 6px 16px 6px 0;
+	vertical-align: top;
+}
+
+.parameter-table code {
+	font: var(--mat-sys-body-small);
+	overflow-wrap: anywhere;
+}
+
+.parameter-table .chip {
+	border-radius: 999px;
+	font: var(--mat-sys-label-small);
+	padding: 2px 8px;
+	white-space: nowrap;
+}
+
+.parameter-table .chip.required {
+	background: var(--mat-sys-secondary-container);
+	color: var(--mat-sys-on-secondary-container);
+}
+
+.parameter-table .chip.optional {
+	background: var(--mat-sys-surface-container-highest);
+	color: var(--mat-sys-on-surface-variant);
+}
+
+.no-parameters {
+	color: var(--mat-sys-on-surface-variant);
+	font: var(--mat-sys-body-small);
+}
+
 .empty {
 	color: var(--mat-sys-on-surface-variant);
 	margin: 8px 0;

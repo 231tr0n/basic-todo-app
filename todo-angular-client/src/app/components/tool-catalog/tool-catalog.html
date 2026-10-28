@@ -25,12 +25,12 @@
 				(ngModelChange)="setFilter('description', $event)" />
 		</mat-form-field>
 		<mat-form-field subscriptSizing="dynamic">
-			<mat-label>Required</mat-label>
+			<mat-label>Parameter</mat-label>
 			<input
 				matInput
-				class="filter-required"
-				[ngModel]="filters().required"
-				(ngModelChange)="setFilter('required', $event)" />
+				class="filter-parameter"
+				[ngModel]="filters().parameters"
+				(ngModelChange)="setFilter('parameters', $event)" />
 		</mat-form-field>
 	</div>
 
@@ -59,10 +59,46 @@
 						<td *matCellDef="let row" mat-cell>{{ row.description }}</td>
 					</ng-container>
 
-					<ng-container matColumnDef="required">
-						<th *matHeaderCellDef mat-header-cell>Required schema</th>
+					<ng-container matColumnDef="parameters">
+						<th *matHeaderCellDef mat-header-cell>Parameters</th>
 						<td *matCellDef="let row" mat-cell>
-							<code>{{ row.required }}</code>
+							@if (row.parameters.length > 0) {
+								<table class="parameter-table">
+									<thead>
+										<tr>
+											<th scope="col">Parameter</th>
+											<th scope="col">Type</th>
+											<th scope="col">Required</th>
+											<th scope="col">Description</th>
+										</tr>
+									</thead>
+									<tbody>
+										@for (parameter of row.parameters; track parameter.name) {
+											<tr class="parameter">
+												<td>
+													<code>{{ parameter.name }}</code>
+												</td>
+												<td>
+													<code>{{ parameter.kind }}</code>
+												</td>
+												<td>
+													<span
+														class="chip"
+														[class.required]="parameter.required"
+														[class.optional]="!parameter.required">
+														{{ parameter.required ? 'required' : 'optional' }}
+													</span>
+												</td>
+												<td>
+													{{ parameter.description || '—' }}
+												</td>
+											</tr>
+										}
+									</tbody>
+								</table>
+							} @else {
+								<span class="no-parameters">None</span>
+							}
 						</td>
 					</ng-container>
 
