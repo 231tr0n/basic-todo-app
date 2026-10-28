@@ -77,6 +77,7 @@
 	text-align: left;
 	width: 100%;
 }
+
 .parameter-table th {
 	color: var(--mat-sys-on-surface-variant);
 	font: var(--mat-sys-label-small);
