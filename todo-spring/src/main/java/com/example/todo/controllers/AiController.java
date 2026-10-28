@@ -1,6 +1,7 @@
 package com.example.todo.controllers;
 
 import com.example.todo.configurations.TodoConfigurationProperties;
+import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URI;
@@ -27,6 +28,11 @@ public class AiController {
   private final TodoConfigurationProperties configurationProperties;
   private final HttpClient httpClient =
       HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+
+  @PreDestroy
+  void closeHttpClient() {
+    httpClient.close();
+  }
 
   @RequestMapping("/**")
   public ResponseEntity<byte[]> proxy(

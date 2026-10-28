@@ -78,6 +78,12 @@ class AiControllerTest {
     assertThat(captured.body()).isEmpty();
   }
 
+  @Test
+  void closesItsHttpClientWhenShuttingDown() {
+    AiController controller = new AiController(configuration("http://localhost:1"));
+    controller.closeHttpClient();
+  }
+
   private String startServer(int status, String contentType, byte[] responseBody)
       throws IOException {
     server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
