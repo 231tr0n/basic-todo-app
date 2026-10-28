@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
@@ -39,7 +40,7 @@ const META_BOUNDS = ['minimum', 'maximum', 'minLength', 'maxLength', 'minItems',
 
 @Component({
 	selector: 'app-tool-catalog',
-	imports: [FormsModule, MatFormField, MatInput, MatLabel, MatTableModule],
+	imports: [FormsModule, MatFormField, MatIcon, MatInput, MatLabel, MatTableModule],
 	templateUrl: './tool-catalog.html',
 	styleUrl: './tool-catalog.css',
 	changeDetection: ChangeDetectionStrategy.OnPush

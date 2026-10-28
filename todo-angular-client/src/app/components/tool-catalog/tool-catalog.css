@@ -18,20 +18,29 @@
 	padding: 0 8px;
 }
 
+/* Each MCP server renders as its own outlined section with a filled
+   heading banner, so multiple servers stay clearly distinguishable. */
+.server-group {
+	border: 1px solid var(--mat-sys-outline-variant);
+	border-radius: 16px;
+	padding: 12px;
+}
+
 .server-group h3 {
 	align-items: center;
+	background-color: var(--mat-sys-surface-container-high);
+	border-radius: 12px;
 	display: flex;
 	font: var(--mat-sys-title-small);
 	gap: 8px;
-	margin: 8px 0;
+	margin: 0 0 8px;
+	padding: 6px 12px;
 }
 
-/* Consecutive MCP servers get a hairline divider so each server's tool
-   block reads as its own section instead of one continuous table. */
-.server-group + .server-group {
-	border-top: 1px solid var(--mat-sys-outline-variant);
-	margin-top: 12px;
-	padding-top: 16px;
+.server-group h3 mat-icon {
+	font-size: 18px;
+	height: 18px;
+	width: 18px;
 }
 
 .tool-count {
@@ -54,6 +63,14 @@
 .tool-table code {
 	font: var(--mat-sys-body-small);
 	overflow-wrap: anywhere;
+}
+
+/* Filled header bands mark the column headers above the striped rows. */
+.mat-column-server.mat-mdc-header-cell,
+.mat-column-tool.mat-mdc-header-cell,
+.mat-column-description.mat-mdc-header-cell,
+.mat-column-parameters.mat-mdc-header-cell {
+	background-color: var(--mat-sys-surface-container-high);
 }
 
 /* Tool names stand out as filled chips so every row has a visible anchor. */
@@ -96,11 +113,19 @@
 }
 
 .parameter-table th {
-	color: var(--mat-sys-on-surface-variant);
+	background-color: var(--mat-sys-surface-container-high);
+	color: var(--mat-sys-on-surface);
 	font: var(--mat-sys-label-small);
-	font-weight: bold;
-	padding: 4px 8px 4px 0;
+	padding: 4px 8px;
 	white-space: nowrap;
+}
+
+.parameter-table th:first-child {
+	border-radius: 4px 0 0 4px;
+}
+
+.parameter-table th:last-child {
+	border-radius: 0 4px 4px 0;
 }
 
 .parameter-table td {
