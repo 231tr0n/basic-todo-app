@@ -113,8 +113,16 @@
 	background-color: var(--mat-sys-surface-container);
 }
 
+/* The nested parameter table renders as an inset surface: its own
+   outline, rounded corners and the lowest surface level so it reads as
+   a distinct panel instead of blending into the striped tool rows. */
 .parameter-table {
-	border-collapse: collapse;
+	background-color: var(--mat-sys-surface-container-lowest);
+	border: 1px solid var(--mat-sys-outline-variant);
+	border-collapse: separate;
+	border-radius: 12px;
+	border-spacing: 0;
+	overflow: hidden;
 	text-align: left;
 	width: 100%;
 }
@@ -123,16 +131,9 @@
 	background-color: var(--mat-sys-surface-container-high);
 	color: var(--mat-sys-on-surface);
 	font: var(--mat-sys-label-small);
+	font-weight: bold;
 	padding: 4px 8px;
 	white-space: nowrap;
-}
-
-.parameter-table th:first-child {
-	border-radius: 4px 0 0 4px;
-}
-
-.parameter-table th:last-child {
-	border-radius: 0 4px 4px 0;
 }
 
 .parameter-table td {
